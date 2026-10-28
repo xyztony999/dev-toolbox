@@ -1,0 +1,23 @@
+apiVersion: 1
+profile:
+  name: go-core
+  type: techstack
+  title: Go 共用核心与跨平台 CLI 工程栈
+  language: zh-CN
+  depends: []
+stack:
+  layers: [backend]
+  requires_env: []
+  build:
+    command: "go build ./..."
+    module_pattern: "{module}"
+  codegen:
+    orchestrator_agent: agents/core-orchestrator.md
+    specs: skills/core-specs/SKILL.md
+    api_spec: skills/core-specs/SKILL.md
+  validation:
+    rules: [rules/go-core-rules.md]
+assets:
+  rules: [rules/go-core-rules.md]
+  skills: [skills/core-specs]
+  agents: [agents/core-orchestrator.md]

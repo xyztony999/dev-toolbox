@@ -1,0 +1,6 @@
+{
+  "env": {
+    "ACTIVE_PROFILE": "dev-toolbox",
+    "ACTIVE_STACKS": "go-core,go-webview-vue3-antd"
+  }
+}

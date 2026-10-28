@@ -1,0 +1,23 @@
+apiVersion: 1
+profile:
+  name: go-webview-vue3-antd
+  type: techstack
+  title: Go WebView + Vue 3 + TypeScript + Ant Design Vue 桌面工程栈
+  language: zh-CN
+  depends: []
+stack:
+  layers: [frontend]
+  requires_env: []
+  build:
+    command: "npm --prefix frontend run build"
+    module_pattern: "{module}"
+  codegen:
+    orchestrator_agent: agents/webview-frontend-orchestrator.md
+    frontend_agent: agents/webview-frontend-orchestrator.md
+    specs: skills/webview-frontend-specs/SKILL.md
+  validation:
+    rules: [rules/webview-frontend-rules.md]
+assets:
+  rules: [rules/webview-frontend-rules.md]
+  skills: [skills/webview-frontend-specs]
+  agents: [agents/webview-frontend-orchestrator.md]

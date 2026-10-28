@@ -1,0 +1,36 @@
+apiVersion: 1
+profile:
+  name: dev-toolbox
+  type: business
+  title: DevToolbox — 多技术栈项目开发环境与 Git 身份管理
+  language: zh-CN
+  depends: [go-core, go-webview-vue3-antd]
+knowledge:
+  inject: CLAUDE.md
+  sections:
+    business-concepts: knowledge/business-concepts/index.md
+    design-decisions: knowledge/design-decisions/index.md
+    service-pool: knowledge/service-pool/index.md
+    architecture-choices: knowledge/architecture-choices/index.md
+workspace:
+  root: workspace
+  index: workspace/INDEX.md
+  stages:
+    architecture: workspace/00-architecture
+    prd: workspace/02-detailed/prd
+    api: workspace/02-detailed/api
+    interaction: workspace/02-detailed/interaction
+    reports: workspace/05-reports
+  conventions:
+    enum_pool: workspace/01-solution/common-spec/enum-pool.md
+    common_enums: workspace/01-solution/common-spec/common-enums.md
+    select_pool: workspace/01-solution/common-spec/select-pool.md
+slots:
+  code_root: .
+  frontend_root: frontend
+  cli_entry: cmd/dev-toolbox
+  target_platforms: [windows, linux]
+  runtime_tools: [node, java, maven, gradle, androidsdk, golang, python]
+  source_projects: [D:/Project/gitid, D:/Project/devswitch]
+assets:
+  rules: [rules/product-rules.md]

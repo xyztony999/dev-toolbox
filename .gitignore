@@ -1,0 +1,17 @@
+node_modules/
+frontend/dist/
+frontend/dist-demo/
+internal/desktop/ui/index.html
+dist/
+build/
+work/
+*.exe
+*.test
+coverage.out
+.env
+.env.*
+!.env.example
+.claude/.profile-mounts.json
+
+.mimosa/
+*.log

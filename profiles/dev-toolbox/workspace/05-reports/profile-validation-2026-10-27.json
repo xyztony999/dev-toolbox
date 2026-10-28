@@ -1,0 +1,526 @@
+{
+  "recordedAt": "2026-10-27T13:45:11.042Z",
+  "root": "D:/Project/dev-toolbox",
+  "engineCli": "C:/Users/zhang/.codex/plugins/cache/ai-project-engine-local/ai-project-engine/0.4.0/payload/engine/cli/bin/engine-cli.js",
+  "results": [
+    {
+      "args": [
+        "check",
+        "go-core"
+      ],
+      "exitCode": 0,
+      "report": {
+        "tool": "engine-cli",
+        "command": "check",
+        "version": "0.4.0",
+        "root": "D:\\Project\\dev-toolbox",
+        "ts": "2026-10-27T13:45:10.708Z",
+        "verdict": "PASS",
+        "summary": {
+          "pass": 11,
+          "warn": 0,
+          "fail": 0
+        },
+        "profile": {
+          "name": "go-core",
+          "type": "techstack",
+          "chain": []
+        },
+        "gate": "允许激活（/profile use）",
+        "checks": [
+          {
+            "id": "C-01",
+            "title": "manifest 可解析且符合 schema",
+            "status": "pass",
+            "detail": "字段齐全"
+          },
+          {
+            "id": "C-02",
+            "title": "命名合法且与目录一致",
+            "status": "pass",
+            "detail": "一致"
+          },
+          {
+            "id": "C-03",
+            "title": "depends 链有效（可达/techstack/无环；空=无栈依赖）",
+            "status": "pass",
+            "detail": "无栈依赖"
+          },
+          {
+            "id": "C-04",
+            "title": "knowledge 引用存在",
+            "status": "pass",
+            "detail": "techstack 无 knowledge 节，跳过"
+          },
+          {
+            "id": "C-05",
+            "title": "workspace 目录齐备",
+            "status": "pass",
+            "detail": "techstack 无 workspace，跳过"
+          },
+          {
+            "id": "C-06",
+            "title": "conventions 引用存在",
+            "status": "pass",
+            "detail": "techstack 无 conventions，跳过"
+          },
+          {
+            "id": "C-07",
+            "title": "assets 存在且无同层冲突",
+            "status": "pass",
+            "detail": "无冲突"
+          },
+          {
+            "id": "C-08",
+            "title": "requires_env 已配置",
+            "status": "pass",
+            "detail": "链内环境变量齐备"
+          },
+          {
+            "id": "C-09",
+            "title": "引擎纯净性（.claude/ + engine/ 无 profile 专名）",
+            "status": "pass",
+            "detail": "无命中"
+          },
+          {
+            "id": "C-10",
+            "title": "INDEX.md schema",
+            "status": "pass",
+            "detail": "techstack 无 workspace，跳过"
+          },
+          {
+            "id": "C-11",
+            "title": "source-index 假设已复核",
+            "status": "pass",
+            "detail": "source-index.md 不存在（未经 /profile kb，可接受）"
+          }
+        ]
+      }
+    },
+    {
+      "args": [
+        "check",
+        "go-webview-vue3-antd"
+      ],
+      "exitCode": 0,
+      "report": {
+        "tool": "engine-cli",
+        "command": "check",
+        "version": "0.4.0",
+        "root": "D:\\Project\\dev-toolbox",
+        "ts": "2026-10-27T13:45:10.787Z",
+        "verdict": "PASS",
+        "summary": {
+          "pass": 11,
+          "warn": 0,
+          "fail": 0
+        },
+        "profile": {
+          "name": "go-webview-vue3-antd",
+          "type": "techstack",
+          "chain": []
+        },
+        "gate": "允许激活（/profile use）",
+        "checks": [
+          {
+            "id": "C-01",
+            "title": "manifest 可解析且符合 schema",
+            "status": "pass",
+            "detail": "字段齐全"
+          },
+          {
+            "id": "C-02",
+            "title": "命名合法且与目录一致",
+            "status": "pass",
+            "detail": "一致"
+          },
+          {
+            "id": "C-03",
+            "title": "depends 链有效（可达/techstack/无环；空=无栈依赖）",
+            "status": "pass",
+            "detail": "无栈依赖"
+          },
+          {
+            "id": "C-04",
+            "title": "knowledge 引用存在",
+            "status": "pass",
+            "detail": "techstack 无 knowledge 节，跳过"
+          },
+          {
+            "id": "C-05",
+            "title": "workspace 目录齐备",
+            "status": "pass",
+            "detail": "techstack 无 workspace，跳过"
+          },
+          {
+            "id": "C-06",
+            "title": "conventions 引用存在",
+            "status": "pass",
+            "detail": "techstack 无 conventions，跳过"
+          },
+          {
+            "id": "C-07",
+            "title": "assets 存在且无同层冲突",
+            "status": "pass",
+            "detail": "无冲突"
+          },
+          {
+            "id": "C-08",
+            "title": "requires_env 已配置",
+            "status": "pass",
+            "detail": "链内环境变量齐备"
+          },
+          {
+            "id": "C-09",
+            "title": "引擎纯净性（.claude/ + engine/ 无 profile 专名）",
+            "status": "pass",
+            "detail": "无命中"
+          },
+          {
+            "id": "C-10",
+            "title": "INDEX.md schema",
+            "status": "pass",
+            "detail": "techstack 无 workspace，跳过"
+          },
+          {
+            "id": "C-11",
+            "title": "source-index 假设已复核",
+            "status": "pass",
+            "detail": "source-index.md 不存在（未经 /profile kb，可接受）"
+          }
+        ]
+      }
+    },
+    {
+      "args": [
+        "check",
+        "dev-toolbox"
+      ],
+      "exitCode": 0,
+      "report": {
+        "tool": "engine-cli",
+        "command": "check",
+        "version": "0.4.0",
+        "root": "D:\\Project\\dev-toolbox",
+        "ts": "2026-10-27T13:45:10.865Z",
+        "verdict": "PASS",
+        "summary": {
+          "pass": 11,
+          "warn": 0,
+          "fail": 0
+        },
+        "profile": {
+          "name": "dev-toolbox",
+          "type": "business",
+          "chain": [
+            "go-core",
+            "go-webview-vue3-antd"
+          ]
+        },
+        "gate": "允许激活（/profile use）",
+        "checks": [
+          {
+            "id": "C-01",
+            "title": "manifest 可解析且符合 schema",
+            "status": "pass",
+            "detail": "字段齐全"
+          },
+          {
+            "id": "C-02",
+            "title": "命名合法且与目录一致",
+            "status": "pass",
+            "detail": "一致"
+          },
+          {
+            "id": "C-03",
+            "title": "depends 链有效（可达/techstack/无环；空=无栈依赖）",
+            "status": "pass",
+            "detail": "链 go-core → go-webview-vue3-antd"
+          },
+          {
+            "id": "C-04",
+            "title": "knowledge 引用存在",
+            "status": "pass",
+            "detail": "inject + 4 个分节全部存在"
+          },
+          {
+            "id": "C-05",
+            "title": "workspace 目录齐备",
+            "status": "pass",
+            "detail": "五目录齐备且 index 定位正确"
+          },
+          {
+            "id": "C-06",
+            "title": "conventions 引用存在",
+            "status": "pass",
+            "detail": "三个槽位文件存在"
+          },
+          {
+            "id": "C-07",
+            "title": "assets 存在且无同层冲突",
+            "status": "pass",
+            "detail": "无冲突"
+          },
+          {
+            "id": "C-08",
+            "title": "requires_env 已配置",
+            "status": "pass",
+            "detail": "链内环境变量齐备"
+          },
+          {
+            "id": "C-09",
+            "title": "引擎纯净性（.claude/ + engine/ 无 profile 专名）",
+            "status": "pass",
+            "detail": "无命中"
+          },
+          {
+            "id": "C-10",
+            "title": "INDEX.md schema",
+            "status": "pass",
+            "detail": "6 个 module 条目结构有效"
+          },
+          {
+            "id": "C-11",
+            "title": "source-index 假设已复核",
+            "status": "pass",
+            "detail": "无未复核假设"
+          }
+        ]
+      }
+    },
+    {
+      "args": [
+        "doctor"
+      ],
+      "exitCode": 1,
+      "report": {
+        "tool": "engine-cli",
+        "command": "doctor",
+        "version": "0.4.0",
+        "root": "D:\\Project\\dev-toolbox",
+        "ts": "2026-10-27T13:45:10.951Z",
+        "verdict": "WARN",
+        "summary": {
+          "pass": 13,
+          "warn": 1,
+          "fail": 0
+        },
+        "activation": {
+          "active": "dev-toolbox",
+          "stacks": [
+            "go-core",
+            "go-webview-vue3-antd"
+          ],
+          "mountsFileExists": true,
+          "recordCount": 7
+        },
+        "checks": [
+          {
+            "id": "D-01",
+            "title": "状态文件可读（mounts + settings）",
+            "status": "pass",
+            "detail": "两处状态文件均可读取且结构合法"
+          },
+          {
+            "id": "D-02",
+            "title": "mounts 文件 apiVersion",
+            "status": "pass",
+            "detail": "apiVersion = 1"
+          },
+          {
+            "id": "D-03",
+            "title": "active 一致性（mounts ↔ settings）",
+            "status": "pass",
+            "detail": "两处均为 dev-toolbox"
+          },
+          {
+            "id": "D-04",
+            "title": "stacks 一致性（mounts ↔ settings）",
+            "status": "pass",
+            "detail": "两处均为 [go-core, go-webview-vue3-antd]"
+          },
+          {
+            "id": "D-05",
+            "title": "激活链 manifest 有效",
+            "status": "pass",
+            "detail": "链 [engine → go-core → go-webview-vue3-antd → dev-toolbox] 全部有效"
+          },
+          {
+            "id": "D-06",
+            "title": "depends 覆盖 ACTIVE_STACKS",
+            "status": "pass",
+            "detail": "depends=[go-core, go-webview-vue3-antd] 与 ACTIVE_STACKS 一致"
+          },
+          {
+            "id": "D-07",
+            "title": "挂载记录形状合法",
+            "status": "pass",
+            "detail": "7 条记录形状合法"
+          },
+          {
+            "id": "D-08",
+            "title": "挂载 src 存在",
+            "status": "pass",
+            "detail": "全部 src 存在"
+          },
+          {
+            "id": "D-09",
+            "title": "挂载 dst 存在",
+            "status": "pass",
+            "detail": "全部 dst 存在"
+          },
+          {
+            "id": "D-10",
+            "title": "挂载形态与 mode 一致",
+            "status": "pass",
+            "detail": "形态全部一致"
+          },
+          {
+            "id": "D-11",
+            "title": "copy 内容与源一致（sha256）",
+            "status": "pass",
+            "detail": "内容全部一致"
+          },
+          {
+            "id": "D-12",
+            "title": "记录集 = 激活链期望集",
+            "status": "pass",
+            "detail": "期望 7 条 = 记录 7 条"
+          },
+          {
+            "id": "D-13",
+            "title": "CLAUDE.md 绑定区",
+            "status": "pass",
+            "detail": "注入行 1 条与期望一致"
+          },
+          {
+            "id": "D-14",
+            "title": "引擎清单 engine-manifest.json",
+            "status": "warn",
+            "detail": "仓根无引擎清单——插件模式下属正常（清单在 payload）；复制模式建议补齐（{engine.*} 槽位解析依赖它）"
+          }
+        ]
+      }
+    },
+    {
+      "args": [
+        "list"
+      ],
+      "exitCode": 0,
+      "report": {
+        "tool": "engine-cli",
+        "command": "list",
+        "version": "0.4.0",
+        "root": "D:\\Project\\dev-toolbox",
+        "ts": "2026-10-27T13:45:11.032Z",
+        "activation": {
+          "active": "dev-toolbox",
+          "stacks": [
+            "go-core",
+            "go-webview-vue3-antd"
+          ]
+        },
+        "profilesDirExists": true,
+        "profiles": [
+          {
+            "name": "dev-toolbox",
+            "type": "business",
+            "title": "DevToolbox — 多技术栈项目开发环境与 Git 身份管理",
+            "depends": [
+              "go-core",
+              "go-webview-vue3-antd"
+            ],
+            "active": true,
+            "inStack": false,
+            "parseOk": true,
+            "parseError": null,
+            "origin": "project",
+            "selectableAsStack": false
+          },
+          {
+            "name": "go-core",
+            "type": "techstack",
+            "title": "Go 共用核心与跨平台 CLI 工程栈",
+            "depends": [],
+            "active": false,
+            "inStack": true,
+            "parseOk": true,
+            "parseError": null,
+            "origin": "project",
+            "selectableAsStack": true
+          },
+          {
+            "name": "go-webview-vue3-antd",
+            "type": "techstack",
+            "title": "Go WebView + Vue 3 + TypeScript + Ant Design Vue 桌面工程栈",
+            "depends": [],
+            "active": false,
+            "inStack": true,
+            "parseOk": true,
+            "parseError": null,
+            "origin": "project",
+            "selectableAsStack": true
+          },
+          {
+            "name": "java-microservice",
+            "type": "techstack",
+            "title": "Java 微服务栈（Spring Boot 3.5 / Spring Cloud 2025 / MyBatis-Plus 3.5 / RocketMQ）",
+            "depends": [],
+            "active": false,
+            "inStack": false,
+            "parseOk": true,
+            "parseError": null,
+            "origin": "engine",
+            "selectableAsStack": true
+          },
+          {
+            "name": "react-vite-web",
+            "type": "techstack",
+            "title": "React Web 栈（React 19 / Vite / MUI 或轻渲染层 / Bun 或 npm）",
+            "depends": [],
+            "active": false,
+            "inStack": false,
+            "parseOk": true,
+            "parseError": null,
+            "origin": "engine",
+            "selectableAsStack": true
+          },
+          {
+            "name": "vue3-engine",
+            "type": "techstack",
+            "title": "Vue3 引擎栈（Vue 3.4+ / TypeScript 5 / Ant Design Vue 4 / Vite 5 / pnpm workspace）",
+            "depends": [],
+            "active": false,
+            "inStack": false,
+            "parseOk": true,
+            "parseError": null,
+            "origin": "engine",
+            "selectableAsStack": true
+          }
+        ]
+      }
+    }
+  ],
+  "inventoryVerification": {
+    "groups": 20,
+    "manifests": 57,
+    "parseErrors": 0,
+    "excludedDirectoryLeaks": 0
+  },
+  "activationVerification": {
+    "active": "dev-toolbox",
+    "stacks": [
+      "go-core",
+      "go-webview-vue3-antd"
+    ],
+    "mounts": 7,
+    "mode": [
+      "copy"
+    ]
+  },
+  "applicationBuild": "not-run: no application source; initialization only",
+  "gates": {
+    "gate1": "pending",
+    "gate2": "pending"
+  }
+}

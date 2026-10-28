@@ -1,0 +1,1434 @@
+{
+  "schemaVersion": 1,
+  "scannedAt": "2026-10-27T13:37:33.996Z",
+  "timezone": "Asia/Shanghai",
+  "root": "D:\\Project",
+  "method": "ripgrep filename enumeration; static manifests; no project commands executed",
+  "excludedDirectories": [
+    ".git",
+    "node_modules",
+    "vendor",
+    "dist",
+    "build",
+    "target",
+    ".venv",
+    "venv",
+    ".gradle",
+    ".idea",
+    ".next",
+    "__pycache__",
+    ".claude",
+    ".codex",
+    ".mimosa",
+    ".zcode",
+    ".local",
+    ".cache",
+    "verify-libs",
+    "profiles",
+    "payload",
+    "workspace",
+    "site-packages",
+    "local_modules"
+  ],
+  "limitations": [
+    "Directories are project groups, not guaranteed independent repositories.",
+    "Declared versions are requirements or compile targets, not proof of installed or working runtimes.",
+    "Archived and bundled manifests are retained and labeled; source extension counts may include static templates and bundled source.",
+    "No inference of activity from modification time; no environment files, credentials, database URLs, or private configuration read.",
+    "Lockfile and container markers record presence only, not complete dependency or service inventories."
+  ],
+  "projects": [
+    {
+      "name": "8",
+      "path": "D:\\Project\\8",
+      "sourceExtensions": {
+        ".js": 12,
+        ".html": 1
+      },
+      "manifests": [
+        {
+          "path": "package.json",
+          "archived": false,
+          "bundled": false,
+          "kind": "node",
+          "name": "8",
+          "dependencies": {
+            "bootstrap": "^5.2.3",
+            "firebase": "^9.18.0",
+            "fs-extra": "^11.1.0",
+            "js-md5": "^0.7.3",
+            "react": "^18.2.0",
+            "react-bootstrap": "^2.7.2",
+            "react-dom": "^18.2.0",
+            "react-router-dom": "^6.0.2",
+            "react-scripts": "^5.0.1",
+            "web-vitals": "^2.1.4"
+          },
+          "devDependencies": {
+            "gh-pages": "^2.0.1"
+          }
+        }
+      ],
+      "markers": [
+        "package-lock.json"
+      ]
+    },
+    {
+      "name": "9",
+      "path": "D:\\Project\\9",
+      "sourceExtensions": {
+        ".js": 13,
+        ".html": 1
+      },
+      "manifests": [
+        {
+          "path": "package.json",
+          "archived": false,
+          "bundled": false,
+          "kind": "node",
+          "name": "9",
+          "dependencies": {
+            "bootstrap": "^5.2.3",
+            "firebase": "^9.18.0",
+            "fs-extra": "^11.1.0",
+            "js-md5": "^0.7.3",
+            "react": "^18.2.0",
+            "react-bootstrap": "^2.7.2",
+            "react-dom": "^18.2.0",
+            "react-router-dom": "^6.0.2",
+            "react-scripts": "^5.0.1",
+            "web-vitals": "^2.1.4"
+          },
+          "devDependencies": {
+            "gh-pages": "^2.0.1"
+          }
+        }
+      ],
+      "markers": [
+        "package-lock.json"
+      ]
+    },
+    {
+      "name": "Knowlecy",
+      "path": "D:\\Project\\Knowlecy",
+      "sourceExtensions": {
+        ".py": 33
+      },
+      "manifests": [
+        {
+          "path": "LitInsightNoSQLDB/pyproject.toml",
+          "archived": false,
+          "bundled": false,
+          "kind": "python",
+          "signals": [
+            "[tool.poetry]",
+            "[tool.poetry.dependencies]",
+            "python = \"^3.11\"",
+            "fastapi = \"^0.110.0\"",
+            "uvicorn = \"^0.29.0\"",
+            "motor = \"^3.3.2\"",
+            "pymongo = \"^4.6.2\"",
+            "requires = [\"poetry-core\"]",
+            "build-backend = \"poetry.core.masonry.api\""
+          ],
+          "dependencyNames": [
+            "name",
+            "version",
+            "description",
+            "authors",
+            "readme",
+            "python",
+            "fastapi",
+            "uvicorn",
+            "pydantic",
+            "motor",
+            "pydantic-settings",
+            "python-multipart",
+            "pymongo",
+            "requires",
+            "build-backend"
+          ]
+        },
+        {
+          "path": "LitInsightVectorDB/pyproject.toml",
+          "archived": false,
+          "bundled": false,
+          "kind": "python",
+          "signals": [
+            "[tool.poetry]",
+            "[tool.poetry.dependencies]",
+            "python = \"^3.11\"",
+            "chromadb = \"^0.4.24\"",
+            "fastapi = \"^0.110.0\"",
+            "uvicorn = \"^0.29.0\"",
+            "requires = [\"poetry-core\"]",
+            "build-backend = \"poetry.core.masonry.api\""
+          ],
+          "dependencyNames": [
+            "name",
+            "version",
+            "description",
+            "authors",
+            "readme",
+            "python",
+            "chromadb",
+            "PyYAML",
+            "pydantic",
+            "fastapi",
+            "uvicorn",
+            "llama-index",
+            "requires",
+            "build-backend"
+          ]
+        },
+        {
+          "path": "LiteratureCrawler.old/pyproject.toml",
+          "archived": true,
+          "bundled": false,
+          "kind": "python",
+          "signals": [
+            "[tool.poetry]",
+            "[tool.poetry.dependencies]",
+            "python = \"^3.11\"",
+            "pymongo = \"^4.6.2\"",
+            "chromadb = \"^0.4.24\"",
+            "fastapi = \"^0.110.0\"",
+            "motor = \"^3.4.0\"",
+            "mysql-connector-python = \"^8.3.0\"",
+            "[tool.poetry.group.dev.dependencies]",
+            "requires = [\"poetry-core\"]",
+            "build-backend = \"poetry.core.masonry.api\""
+          ],
+          "dependencyNames": [
+            "name",
+            "version",
+            "description",
+            "authors",
+            "license",
+            "readme",
+            "python",
+            "pymongo",
+            "llama-index",
+            "bs4",
+            "chromadb",
+            "fastapi",
+            "chardet",
+            "motor",
+            "pydantic",
+            "pydantic-settings",
+            "python-dotenv",
+            "python-multipart",
+            "mysql-connector-python",
+            "llama-index-storage-docstore-mongodb",
+            "llama-index-vector-stores-chroma",
+            "llama-index-storage-index-store-mongodb",
+            "pytest",
+            "lxml",
+            "requires",
+            "build-backend"
+          ]
+        },
+        {
+          "path": "LiteratureCrawler/pyproject.toml",
+          "archived": false,
+          "bundled": false,
+          "kind": "python",
+          "signals": [
+            "[tool.poetry]",
+            "[tool.poetry.dependencies]",
+            "python = \">=3.11,<3.12\"",
+            "pymongo = \"^4.6.2\"",
+            "chromadb = \"^0.4.24\"",
+            "fastapi = \"^0.110.0\"",
+            "motor = \"^3.4.0\"",
+            "mysql-connector-python = \"^8.3.0\"",
+            "[tool.poetry.group.dev.dependencies]",
+            "requires = [\"poetry-core\"]",
+            "build-backend = \"poetry.core.masonry.api\""
+          ],
+          "dependencyNames": [
+            "name",
+            "version",
+            "description",
+            "authors",
+            "license",
+            "readme",
+            "python",
+            "pymongo",
+            "llama-index",
+            "bs4",
+            "chromadb",
+            "fastapi",
+            "chardet",
+            "motor",
+            "pydantic",
+            "pydantic-settings",
+            "python-multipart",
+            "mysql-connector-python",
+            "llama-index-storage-docstore-mongodb",
+            "llama-index-vector-stores-chroma",
+            "llama-index-storage-index-store-mongodb",
+            "ipykernel",
+            "python-dotenv",
+            "pytest",
+            "lxml",
+            "requires",
+            "build-backend"
+          ]
+        }
+      ],
+      "markers": [
+        "LitInsightNoSQLDB/Dockerfile",
+        "LitInsightNoSQLDB/poetry.lock",
+        "LitInsightVectorDB/Dockerfile",
+        "LitInsightVectorDB/poetry.lock",
+        "LiteratureCrawler.old/docker/Dockerfile",
+        "LiteratureCrawler.old/poetry.lock",
+        "LiteratureCrawler/Dockerfile",
+        "LiteratureCrawler/poetry.lock"
+      ]
+    },
+    {
+      "name": "Kulaa",
+      "path": "D:\\Project\\Kulaa",
+      "sourceExtensions": {
+        ".java": 303,
+        ".html": 3,
+        ".ts": 73,
+        ".tsx": 307
+      },
+      "manifests": [
+        {
+          "path": "KulaaWebsite-Backend/pom.xml",
+          "archived": false,
+          "bundled": false,
+          "kind": "java",
+          "signals": [
+            "<groupId>org.springframework.boot</groupId>",
+            "<artifactId>spring-boot-starter-parent</artifactId>",
+            "<version>2.7.15</version>",
+            "<version>0.0.1-SNAPSHOT</version>",
+            "<java.version>1.8</java.version>",
+            "<groupId>org.springframework.boot</groupId>",
+            "<version>${netty.version}</version> <!-- 添加 Netty all 依赖项 -->",
+            "<!--<version>${netty.version}</version>-->",
+            "<version>4.1.72.Final</version>",
+            "<groupId>org.springframework.boot</groupId>",
+            "<groupId>org.springframework.boot</groupId>",
+            "<version>1.18.34</version>",
+            "<version>6.1.7.Final</version>",
+            "<version>1.12.0</version>",
+            "<version>12.14.0</version>",
+            "<groupId>org.springframework.boot</groupId>",
+            "<version>0.9.1</version>",
+            "<version>20211018.2</version>",
+            "<groupId>org.springframework.boot</groupId>",
+            "<artifactId>spring-boot-starter-data-redis</artifactId>",
+            "<groupId>org.springframework.boot</groupId>",
+            "<groupId>org.springframework.boot</groupId>",
+            "<version>2.3.4.RELEASE</version>",
+            "<groupId>redis.clients</groupId>",
+            "<version>2.10.0</version>",
+            "<groupId>org.redisson</groupId>",
+            "<artifactId>redisson-hibernate-53</artifactId>",
+            "<version>3.16.6</version>",
+            "<!-- Embedded Redis for fallback -->",
+            "<artifactId>embedded-redis</artifactId>"
+          ]
+        },
+        {
+          "path": "KulaaWebsiteSEO/package.json",
+          "archived": false,
+          "bundled": false,
+          "kind": "node",
+          "name": "kulaa-nextjs",
+          "dependencies": {
+            "@emotion/react": "^11.14.0",
+            "@emotion/styled": "^11.14.0",
+            "@fortawesome/free-regular-svg-icons": "^6.7.2",
+            "@fortawesome/free-solid-svg-icons": "^6.7.2",
+            "@fortawesome/react-fontawesome": "^0.2.2",
+            "@headlessui/react": "^2.1.8",
+            "@heroicons/react": "^2.1.5",
+            "@hookform/resolvers": "^5.2.2",
+            "@mui/icons-material": "^7.1.0",
+            "@mui/material": "^7.1.0",
+            "@portabletext/react": "^3.2.1",
+            "@radix-ui/react-avatar": "^1.1.10",
+            "@radix-ui/react-checkbox": "^1.3.3",
+            "@radix-ui/react-dialog": "^1.1.15",
+            "@radix-ui/react-dropdown-menu": "^2.1.1",
+            "@radix-ui/react-label": "^2.1.7",
+            "@radix-ui/react-select": "^2.2.6",
+            "@radix-ui/react-slot": "^1.2.3",
+            "@sanity/client": "^7.8.2",
+            "@sanity/image-url": "^1.1.0",
+            "@stripe/react-stripe-js": "^3.7.0",
+            "@stripe/stripe-js": "^7.3.1",
+            "@tabler/icons-react": "^3.19.0",
+            "@tanstack/react-query": "^5.80.2",
+            "@types/styled-components": "^5.1.34",
+            "axios": "^1.9.0",
+            "browser-image-compression": "^2.0.2",
+            "class-variance-authority": "^0.7.1",
+            "clsx": "^2.1.1",
+            "dayjs": "^1.11.13",
+            "framer-motion": "^11.11.8",
+            "lucide-react": "^0.544.0",
+            "next": "15.4.5",
+            "qs": "^6.13.1",
+            "react": "19.1.0",
+            "react-cropper": "^2.3.3",
+            "react-dom": "19.1.0",
+            "react-dropzone": "^14.2.9",
+            "react-hook-form": "^7.65.0",
+            "react-icons": "^5.3.0",
+            "react-modal": "^3.16.3",
+            "react-phone-number-input": "^3.4.12",
+            "react-select": "^5.10.1",
+            "react-tag-input": "^6.10.6",
+            "react-toastify": "^11.0.5",
+            "recharts": "^3.1.2",
+            "styled-components": "^6.1.13",
+            "tailwind-merge": "^3.3.1",
+            "tailwind-scrollbar": "3.x",
+            "tailwindcss-animate": "^1.0.7",
+            "zod": "^4.1.12",
+            "zustand": "^5.0.5"
+          },
+          "devDependencies": {
+            "@eslint/js": "^9.8.0",
+            "@svgr/webpack": "^8.1.0",
+            "@types/node": "^22.2.0",
+            "@types/qs": "^6.9.17",
+            "@types/react": "^19",
+            "@types/react-dom": "^19",
+            "autoprefixer": "^10.4.20",
+            "eslint": "^9.9.0",
+            "eslint-config-next": "15.4.5",
+            "eslint-config-prettier": "^10.1.5",
+            "eslint-plugin-prettier": "^5.5.1",
+            "eslint-plugin-react-hooks": "^5.1.0-rc.0",
+            "globals": "^15.9.0",
+            "postcss": "^8.4.41",
+            "prettier": "^3.6.2",
+            "tailwindcss": "^3.4.9",
+            "typescript": "^5.5.3",
+            "typescript-eslint": "^8.0.0"
+          }
+        }
+      ],
+      "markers": [
+        "KulaaWebsiteSEO/package-lock.json"
+      ]
+    },
+    {
+      "name": "Kulaa(Unimelb)",
+      "path": "D:\\Project\\Kulaa(Unimelb)",
+      "sourceExtensions": {
+        ".java": 92,
+        ".ts": 17,
+        ".tsx": 53
+      },
+      "manifests": [],
+      "markers": []
+    },
+    {
+      "name": "SEG2105",
+      "path": "D:\\Project\\SEG2105",
+      "sourceExtensions": {
+        ".java": 42
+      },
+      "manifests": [
+        {
+          "path": "app/build.gradle",
+          "archived": false,
+          "bundled": false,
+          "kind": "java",
+          "signals": [
+            "id 'com.android.application'",
+            "compileSdk 31",
+            "targetSdk 31",
+            "sourceCompatibility JavaVersion.VERSION_11",
+            "targetCompatibility JavaVersion.VERSION_11"
+          ]
+        },
+        {
+          "path": "build.gradle",
+          "archived": false,
+          "bundled": false,
+          "kind": "java",
+          "signals": [
+            "classpath 'com.android.tools.build:gradle:8.4.1'"
+          ]
+        }
+      ],
+      "markers": [
+        "gradle/wrapper/gradle-wrapper.properties"
+      ]
+    },
+    {
+      "name": "SEG2105F21Project_Group_9",
+      "path": "D:\\Project\\SEG2105F21Project_Group_9",
+      "sourceExtensions": {
+        ".java": 42
+      },
+      "manifests": [
+        {
+          "path": "app/build.gradle",
+          "archived": false,
+          "bundled": false,
+          "kind": "java",
+          "signals": [
+            "id 'com.android.application'",
+            "compileSdk 31",
+            "targetSdk 31",
+            "sourceCompatibility JavaVersion.VERSION_11",
+            "targetCompatibility JavaVersion.VERSION_11"
+          ]
+        },
+        {
+          "path": "build.gradle",
+          "archived": false,
+          "bundled": false,
+          "kind": "java",
+          "signals": [
+            "classpath \"com.android.tools.build:gradle:$agp_version\""
+          ]
+        }
+      ],
+      "markers": [
+        "gradle/wrapper/gradle-wrapper.properties"
+      ]
+    },
+    {
+      "name": "SLS",
+      "path": "D:\\Project\\SLS",
+      "sourceExtensions": {
+        ".py": 9,
+        ".java": 5
+      },
+      "manifests": [
+        {
+          "path": "blindAidAPI/pyproject.toml",
+          "archived": false,
+          "bundled": false,
+          "kind": "python",
+          "signals": [
+            "[tool.poetry]",
+            "[tool.poetry.dependencies]",
+            "python = \"^3.11\"",
+            "fastapi = \"^0.110.1\"",
+            "uvicorn = \"^0.29.0\"",
+            "requires = [\"poetry-core\"]",
+            "build-backend = \"poetry.core.masonry.api\""
+          ],
+          "dependencyNames": [
+            "name",
+            "version",
+            "description",
+            "authors",
+            "readme",
+            "python",
+            "fastapi",
+            "uvicorn",
+            "requires",
+            "build-backend"
+          ]
+        },
+        {
+          "path": "blindAid/app/build.gradle.kts",
+          "archived": false,
+          "bundled": false,
+          "kind": "java",
+          "signals": [
+            "id(\"com.android.application\")",
+            "compileSdk = 34",
+            "targetSdk = 34",
+            "sourceCompatibility = JavaVersion.VERSION_1_8",
+            "targetCompatibility = JavaVersion.VERSION_1_8"
+          ]
+        },
+        {
+          "path": "blindAid/build.gradle.kts",
+          "archived": false,
+          "bundled": false,
+          "kind": "java",
+          "signals": [
+            "id(\"com.android.application\") version \"8.3.1\" apply false"
+          ]
+        },
+        {
+          "path": "itemQueryAPI/pyproject.toml",
+          "archived": false,
+          "bundled": false,
+          "kind": "python",
+          "signals": [
+            "[tool.poetry]",
+            "[tool.poetry.dependencies]",
+            "python = \"^3.11\"",
+            "fastapi = \"^0.110.1\"",
+            "uvicorn = \"^0.29.0\"",
+            "mysql-connector-python = \"^8.3.0\"",
+            "requires = [\"poetry-core\"]",
+            "build-backend = \"poetry.core.masonry.api\""
+          ],
+          "dependencyNames": [
+            "name",
+            "version",
+            "description",
+            "authors",
+            "readme",
+            "python",
+            "fastapi",
+            "python-dotenv",
+            "pydantic",
+            "uvicorn",
+            "mysql-connector-python",
+            "requests",
+            "requires",
+            "build-backend"
+          ]
+        }
+      ],
+      "markers": [
+        "blindAidAPI/poetry.lock",
+        "blindAid/gradle/wrapper/gradle-wrapper.properties",
+        "itemQueryAPI/poetry.lock"
+      ]
+    },
+    {
+      "name": "SWEN30006",
+      "path": "D:\\Project\\SWEN30006",
+      "sourceExtensions": {
+        ".java": 75
+      },
+      "manifests": [
+        {
+          "path": "project1-2025s1-mon16-00-team-1/build.gradle",
+          "archived": false,
+          "bundled": false,
+          "kind": "java",
+          "signals": []
+        },
+        {
+          "path": "project2-2025s1-mon16-00-team-01/app/build.gradle",
+          "archived": false,
+          "bundled": false,
+          "kind": "java",
+          "signals": [
+            "languageVersion = JavaLanguageVersion.of(19)"
+          ]
+        }
+      ],
+      "markers": [
+        "project1-2025s1-mon16-00-team-1/gradle/wrapper/gradle-wrapper.properties",
+        "project2-2025s1-mon16-00-team-01/gradle/wrapper/gradle-wrapper.properties"
+      ]
+    },
+    {
+      "name": "TinyPost",
+      "path": "D:\\Project\\TinyPost",
+      "sourceExtensions": {
+        ".html": 4,
+        ".ts": 45,
+        ".js": 2,
+        ".tsx": 8
+      },
+      "manifests": [
+        {
+          "path": "package.json",
+          "archived": false,
+          "bundled": false,
+          "kind": "node",
+          "name": "tinypost",
+          "dependencies": {
+            "@dnd-kit/core": "6.3.1",
+            "@dnd-kit/sortable": "10.0.0",
+            "codemirror": "^5.65.18",
+            "sql.js": "^1.12.0"
+          },
+          "devDependencies": {
+            "@rollup/wasm-node": "4.62.3",
+            "@types/codemirror": "^5.60.16",
+            "@types/node": "^22.5.0",
+            "@types/react": "^19.1.8",
+            "@types/react-dom": "^19.1.6",
+            "@types/sql.js": "^1.4.11",
+            "@vitejs/plugin-react": "^4.6.0",
+            "electron": "^32.0.1",
+            "electron-builder": "^25.0.5",
+            "electron-vite": "^2.3.0",
+            "react": "^19.1.0",
+            "react-dom": "^19.1.0",
+            "rollup": "npm:@rollup/wasm-node@4.62.3",
+            "typescript": "~5.8.3",
+            "vite": "^5.4.3",
+            "vitest": "^2.1.9"
+          }
+        }
+      ],
+      "markers": [
+        "package-lock.json"
+      ]
+    },
+    {
+      "name": "ai-project-engine",
+      "path": "D:\\Project\\ai-project-engine",
+      "sourceExtensions": {
+        ".js": 35,
+        ".html": 4,
+        ".rs": 2,
+        ".vue": 14
+      },
+      "manifests": [
+        {
+          "path": "engine/cli/package.json",
+          "archived": false,
+          "bundled": false,
+          "kind": "node",
+          "name": "ai-project-engine-cli",
+          "engines": {
+            "node": ">=18"
+          }
+        },
+        {
+          "path": "engine/gui/package.json",
+          "archived": false,
+          "bundled": false,
+          "kind": "node",
+          "name": "ai-project-engine-gui",
+          "engines": {
+            "node": ">=18"
+          },
+          "dependencies": {
+            "mermaid": "^12.0.0"
+          },
+          "devDependencies": {
+            "@fontsource/jetbrains-mono": "^5.3.0",
+            "@fontsource/noto-sans-sc": "^5.3.0",
+            "@tauri-apps/api": "^2.12.1",
+            "@tauri-apps/cli": "^2",
+            "@tauri-apps/plugin-dialog": "^2.8.1",
+            "@vitejs/plugin-vue": "^5.2.0",
+            "vite": "^6.0.0",
+            "vue": "^3.5.0"
+          }
+        },
+        {
+          "path": "engine/gui/src-tauri/Cargo.toml",
+          "archived": false,
+          "bundled": false,
+          "kind": "rust",
+          "signals": [
+            "description = \"engine 工作台桌面壳（Vue 3 前端 + 本机 node server，Tauri/WebView2）\"",
+            "edition = \"2021\"",
+            "tauri-build = { version = \"2\", features = [] }",
+            "tauri = { version = \"2\", features = [] }",
+            "tauri-plugin-single-instance = \"2\"",
+            "tauri-plugin-dialog = \"2\""
+          ]
+        }
+      ],
+      "markers": [
+        "engine/gui/package-lock.json"
+      ]
+    },
+    {
+      "name": "debateTimer",
+      "path": "D:\\Project\\debateTimer",
+      "sourceExtensions": {
+        ".html": 5,
+        ".php": 1,
+        ".js": 90
+      },
+      "manifests": [
+        {
+          "path": "package.json",
+          "archived": false,
+          "bundled": false,
+          "kind": "node",
+          "name": "timer",
+          "dependencies": {
+            "@emotion/react": "^11.14.0",
+            "@emotion/styled": "^11.14.1",
+            "@mui/icons-material": "^9.2.0",
+            "@mui/material": "^9.2.0",
+            "@testing-library/jest-dom": "^6.9.1",
+            "@testing-library/react": "^16.3.2",
+            "@testing-library/user-event": "^14.6.1",
+            "axios": "^1.17.0",
+            "i18next": "^26.0.10",
+            "i18next-browser-languagedetector": "^8.2.1",
+            "react": "^19.2.6",
+            "react-dom": "^19.2.6",
+            "react-i18next": "^17.0.7",
+            "react-router-dom": "^7.15.0",
+            "web-vitals": "^5.2.0"
+          },
+          "devDependencies": {
+            "@eslint/js": "^9.39.4",
+            "@playwright/test": "^1.64.1",
+            "@testing-library/dom": "^10.4.1",
+            "@types/react": "^19.2.14",
+            "@types/react-dom": "^19.2.3",
+            "@vitejs/plugin-react": "^4.7.0",
+            "eslint": "^9.39.4",
+            "eslint-plugin-react-hooks": "^7.1.1",
+            "eslint-plugin-react-refresh": "^0.5.2",
+            "vite": "^6.4.2",
+            "vite-plugin-pwa": "^2.0.0",
+            "vite-plugin-svgr": "^5.2.0"
+          }
+        },
+        {
+          "path": "server/package.json",
+          "archived": false,
+          "bundled": false,
+          "kind": "node",
+          "name": "debatetimer-api",
+          "dependencies": {
+            "bcryptjs": "^3.0.2",
+            "cookie-parser": "^1.4.7",
+            "cors": "^2.8.5",
+            "dotenv": "^16.4.7",
+            "express": "^4.21.2",
+            "mongodb": "^6.12.0"
+          }
+        }
+      ],
+      "markers": []
+    },
+    {
+      "name": "deck-loop",
+      "path": "D:\\Project\\deck-loop",
+      "sourceExtensions": {
+        ".java": 1,
+        ".html": 2,
+        ".rs": 4,
+        ".vue": 41,
+        ".ts": 226,
+        ".js": 1
+      },
+      "manifests": [
+        {
+          "path": "client/package.json",
+          "archived": false,
+          "bundled": false,
+          "kind": "node",
+          "name": "deck-loop-client",
+          "engines": {
+            "node": ">=20"
+          },
+          "dependencies": {
+            "@ant-design/icons-vue": "^7.0.1",
+            "@tauri-apps/api": "^2.12.4",
+            "ant-design-vue": "^4.2.6",
+            "axios": "^1.12.2",
+            "dayjs": "^1.11.13",
+            "jszip": "^3.10.2",
+            "pinia": "^2.3.1",
+            "pptxgenjs": "^4.0.1",
+            "vue": "^3.5.13",
+            "vue-router": "^4.5.0"
+          },
+          "devDependencies": {
+            "@tauri-apps/cli": "^2.9.6",
+            "@types/jszip": "^3.4.1",
+            "@vitejs/plugin-vue": "^5.2.1",
+            "less": "^4.2.0",
+            "typescript": "~5.6.3",
+            "unplugin-vue-components": "^0.27.5",
+            "vite": "^5.4.8",
+            "vue-tsc": "^2.1.10"
+          }
+        },
+        {
+          "path": "client/src-tauri/Cargo.toml",
+          "archived": false,
+          "bundled": false,
+          "kind": "rust",
+          "signals": [
+            "description = \"Deck-Loop 桌面客户端（Tauri 壳）\"",
+            "edition = \"2021\"",
+            "tauri-build = { version = \"2\", features = [] }",
+            "tauri = { version = \"2\", features = [] }"
+          ]
+        },
+        {
+          "path": "package.json",
+          "archived": false,
+          "bundled": false,
+          "kind": "node",
+          "name": "deck-loop-server-launcher"
+        },
+        {
+          "path": "server-node/package.json",
+          "archived": false,
+          "bundled": false,
+          "kind": "node",
+          "name": "@deck-loop/core",
+          "engines": {
+            "node": ">=20"
+          },
+          "dependencies": {
+            "@nestjs/common": "^10.4.6",
+            "@nestjs/core": "^10.4.6",
+            "@nestjs/event-emitter": "^2.1.1",
+            "@nestjs/mongoose": "^10.1.0",
+            "@nestjs/platform-express": "^10.4.6",
+            "class-transformer": "^0.5.1",
+            "class-validator": "^0.14.1",
+            "eventemitter2": "^6.4.9",
+            "mongoose": "^8.8.3",
+            "multer": "2.0.2",
+            "reflect-metadata": "^0.2.2",
+            "rxjs": "^7.8.1"
+          },
+          "devDependencies": {
+            "@nestjs/cli": "^10.4.9",
+            "@nestjs/testing": "^10.4.6",
+            "@types/jest": "^29.5.14",
+            "@types/node": "^22.10.2",
+            "@types/supertest": "^6.0.2",
+            "cross-env": "^10.1.0",
+            "jest": "^29.7.0",
+            "mongodb-memory-server": "^10.1.3",
+            "supertest": "^7.0.0",
+            "ts-jest": "^29.2.5",
+            "typescript": "~5.7.2"
+          }
+        }
+      ],
+      "markers": [
+        "client/pnpm-lock.yaml",
+        "server-node/pnpm-lock.yaml"
+      ]
+    },
+    {
+      "name": "devswitch",
+      "path": "D:\\Project\\devswitch",
+      "sourceExtensions": {
+        ".py": 30,
+        ".js": 1,
+        ".html": 2,
+        ".vue": 10,
+        ".ts": 7
+      },
+      "manifests": [
+        {
+          "path": "frontend/package.json",
+          "archived": false,
+          "bundled": false,
+          "kind": "node",
+          "name": "devswitch-ui",
+          "dependencies": {
+            "naive-ui": "^2.41.0",
+            "vue": "^3.5.13"
+          },
+          "devDependencies": {
+            "@vitejs/plugin-vue": "^5.2.1",
+            "typescript": "^5.7.2",
+            "vite": "^5.4.11",
+            "vite-plugin-singlefile": "^2.1.0"
+          }
+        },
+        {
+          "path": "go.mod",
+          "archived": false,
+          "bundled": false,
+          "kind": "go",
+          "signals": [
+            "module github.com/xyztony999/devswitch",
+            "go 1.24"
+          ]
+        },
+        {
+          "path": "pyproject.toml",
+          "archived": false,
+          "bundled": false,
+          "kind": "python",
+          "signals": [],
+          "dependencyNames": [
+            "testpaths"
+          ]
+        }
+      ],
+      "markers": [
+        "frontend/package-lock.json"
+      ]
+    },
+    {
+      "name": "gitid",
+      "path": "D:\\Project\\gitid",
+      "sourceExtensions": {
+        ".js": 9,
+        ".html": 2,
+        ".vue": 4
+      },
+      "manifests": [
+        {
+          "path": "cli/package.json",
+          "archived": false,
+          "bundled": false,
+          "kind": "node",
+          "name": "gitid",
+          "engines": {
+            "node": ">=18"
+          }
+        },
+        {
+          "path": "desktop/package.json",
+          "archived": false,
+          "bundled": false,
+          "kind": "node",
+          "name": "gitid",
+          "dependencies": {
+            "@ant-design/icons-vue": "^7.0.1",
+            "ant-design-vue": "^4.2.6",
+            "electron-updater": "^6.8.9",
+            "vue": "^3.5.13"
+          },
+          "devDependencies": {
+            "@vitejs/plugin-vue": "^5.2.1",
+            "electron": "^33.2.0",
+            "electron-builder": "^25.1.8",
+            "vite": "^5.4.11"
+          }
+        }
+      ],
+      "markers": [
+        "cli/package-lock.json",
+        "desktop/package-lock.json"
+      ]
+    },
+    {
+      "name": "kindle-calendar",
+      "path": "D:\\Project\\kindle-calendar",
+      "sourceExtensions": {
+        ".py": 52,
+        ".html": 6,
+        ".c": 1
+      },
+      "manifests": [
+        {
+          "path": "requirements.txt",
+          "archived": false,
+          "bundled": false,
+          "kind": "python",
+          "signals": [
+            "flask>=3.0.0"
+          ],
+          "dependencyNames": [
+            "flask",
+            "pillow",
+            "pyyaml",
+            "requests",
+            "tzdata",
+            "oss2",
+            "lunar-python",
+            "icalendar",
+            "recurring-ical-events"
+          ]
+        }
+      ],
+      "markers": [
+        "Dockerfile",
+        "docker-compose.acr.yml",
+        "docker-compose.baota.yml",
+        "docker-compose.image.yml",
+        "docker-compose.yml"
+      ]
+    },
+    {
+      "name": "onlineEducation",
+      "path": "D:\\Project\\onlineEducation",
+      "sourceExtensions": {
+        ".java": 27,
+        ".html": 349,
+        ".js": 79
+      },
+      "manifests": [
+        {
+          "path": "onlineEducationServer/onlineTutor/build.gradle",
+          "archived": false,
+          "bundled": false,
+          "kind": "java",
+          "signals": [
+            "id 'org.springframework.boot' version '2.7.11'",
+            "sourceCompatibility = '17'",
+            "implementation 'org.springframework.boot:spring-boot-starter-data-jpa:2.7.11'",
+            "implementation 'org.springframework.boot:spring-boot-starter-web:2.7.11'",
+            "implementation 'org.springframework.boot:spring-boot-starter-freemarker:2.7.11'",
+            "implementation 'org.springframework.boot:spring-boot-starter-data-jdbc'",
+            "implementation 'org.springframework.data:spring-data-redis'",
+            "runtimeOnly 'com.mysql:mysql-connector-j'",
+            "testImplementation 'org.springframework.boot:spring-boot-starter-test'"
+          ]
+        },
+        {
+          "path": "onlineeducationclient/package.json",
+          "archived": false,
+          "bundled": false,
+          "kind": "node",
+          "name": "online-education-client",
+          "dependencies": {
+            "@fortawesome/fontawesome-svg-core": "^6.4.0",
+            "@fortawesome/free-brands-svg-icons": "^6.4.0",
+            "@fortawesome/free-regular-svg-icons": "^6.4.0",
+            "@fortawesome/free-solid-svg-icons": "^6.4.0",
+            "@fortawesome/react-fontawesome": "^0.2.0",
+            "@testing-library/jest-dom": "^5.16.5",
+            "@testing-library/react": "^13.4.0",
+            "@testing-library/user-event": "^13.5.0",
+            "antd": "^5.5.1",
+            "axios": "^1.4.0",
+            "bootstrap": "^5.3.1",
+            "cross-env": "^7.0.3",
+            "crypto-js": "^4.1.1",
+            "jwt-decode": "^3.1.2",
+            "react": "^18.2.0",
+            "react-dom": "^18.2.0",
+            "react-router-dom": "^6.11.1",
+            "react-scripts": "5.0.1",
+            "react-bootstrap": "^2.8.0",
+            "save": "^2.9.0",
+            "web-vitals": "^2.1.4"
+          }
+        },
+        {
+          "path": "onlineeducationproject-front-end/package.json",
+          "archived": false,
+          "bundled": false,
+          "kind": "node",
+          "name": "eduport",
+          "devDependencies": {
+            "browser-sync": "^2.27.10",
+            "gulp": "^4.0.2",
+            "gulp-autoprefixer": "^8.0.0",
+            "gulp-if": "^3.0.0",
+            "gulp-rename": "^2.0.0",
+            "gulp-rtlcss": "^2.0.0",
+            "gulp-sass": "^5.1.0",
+            "gulp-sourcemaps": "^3.0.0",
+            "sass": "^1.56.1"
+          }
+        },
+        {
+          "path": "onlineeducationproject/eduport_v1.4.0/package.json",
+          "archived": false,
+          "bundled": false,
+          "kind": "node",
+          "name": "eduport",
+          "devDependencies": {
+            "browser-sync": "^2.27.10",
+            "gulp": "^4.0.2",
+            "gulp-autoprefixer": "^8.0.0",
+            "gulp-if": "^3.0.0",
+            "gulp-rename": "^2.0.0",
+            "gulp-rtlcss": "^2.0.0",
+            "gulp-sass": "^5.1.0",
+            "gulp-sourcemaps": "^3.0.0",
+            "sass": "^1.56.1"
+          }
+        },
+        {
+          "path": "onlineeducationproject/归档/OnlineEducation/online-education/package.json",
+          "archived": true,
+          "bundled": false,
+          "kind": "node",
+          "name": "online-education",
+          "dependencies": {
+            "@testing-library/jest-dom": "^5.16.5",
+            "@testing-library/react": "^13.4.0",
+            "@testing-library/user-event": "^13.5.0",
+            "bootstrap": "^5.2.2",
+            "react": "^18.2.0",
+            "react-bootstrap": "^2.5.0",
+            "react-dom": "^18.2.0",
+            "react-scripts": "5.0.1",
+            "react-slideshow-image": "^4.0.5",
+            "web-vitals": "^2.1.4"
+          }
+        },
+        {
+          "path": "onlineeducationproject/归档/eduport_v1.3.0/package.json",
+          "archived": true,
+          "bundled": false,
+          "kind": "node",
+          "name": "eduport",
+          "devDependencies": {
+            "browser-sync": "^2.27.9",
+            "gulp": "^4.0.2",
+            "gulp-autoprefixer": "^8.0.0",
+            "gulp-if": "^3.0.0",
+            "gulp-rename": "^2.0.0",
+            "gulp-rtlcss": "^1.4.2",
+            "gulp-sass": "^5.1.0",
+            "gulp-sourcemaps": "^3.0.0",
+            "sass": "^1.49.9"
+          }
+        }
+      ],
+      "markers": [
+        "onlineEducationServer/onlineTutor/gradle/wrapper/gradle-wrapper.properties",
+        "onlineeducationclient/package-lock.json",
+        "onlineeducationproject-front-end/package-lock.json",
+        "onlineeducationproject/eduport_v1.4.0/package-lock.json",
+        "onlineeducationproject/归档/OnlineEducation/online-education/package-lock.json",
+        "onlineeducationproject/归档/eduport_v1.3.0/package-lock.json"
+      ]
+    },
+    {
+      "name": "pdfjs",
+      "path": "D:\\Project\\pdfjs",
+      "sourceExtensions": {
+        ".js": 3,
+        ".html": 1
+      },
+      "manifests": [],
+      "markers": []
+    },
+    {
+      "name": "py32f403",
+      "path": "D:\\Project\\py32f403",
+      "sourceExtensions": {
+        ".c": 52,
+        ".py": 177,
+        ".php": 1,
+        ".js": 10,
+        ".cpp": 3,
+        ".java": 8
+      },
+      "manifests": [
+        {
+          "path": "GCC/Makefile",
+          "archived": false,
+          "bundled": false,
+          "kind": "native-or-other",
+          "signals": [
+            "PREFIX = arm-none-eabi-",
+            "CC = $(GCCPATH)arm-none-eabi-gcc",
+            "AS = $(GCCPATH)arm-none-eabi-as",
+            "CP = $(GCCPATH)arm-none-eabi-objcopy",
+            "SZ = $(GCCPATH)arm-none-eabi-size",
+            "CPU = -mcpu=cortex-m4"
+          ]
+        },
+        {
+          "path": "mavlink/CMakeLists.txt",
+          "archived": false,
+          "bundled": true,
+          "kind": "native-or-other",
+          "signals": []
+        },
+        {
+          "path": "mavlink/doc/requirements.txt",
+          "archived": false,
+          "bundled": true,
+          "kind": "python",
+          "signals": [],
+          "dependencyNames": []
+        },
+        {
+          "path": "mavlink/examples/c/CMakeLists.txt",
+          "archived": false,
+          "bundled": true,
+          "kind": "native-or-other",
+          "signals": []
+        },
+        {
+          "path": "pymavlink/APM_Mavtest/Makefile",
+          "archived": false,
+          "bundled": true,
+          "kind": "native-or-other",
+          "signals": []
+        },
+        {
+          "path": "pymavlink/generator/CPP11/test/posix/Makefile",
+          "archived": false,
+          "bundled": true,
+          "kind": "native-or-other",
+          "signals": []
+        },
+        {
+          "path": "pymavlink/generator/CS/MAVLink.csproj",
+          "archived": false,
+          "bundled": true,
+          "kind": "native-or-other",
+          "signals": [
+            "<Version>1.0.6</Version>",
+            "<Version>4.7.0</Version>",
+            "<Version>4.7.0</Version>"
+          ]
+        },
+        {
+          "path": "pymavlink/generator/C/test/posix/Makefile",
+          "archived": false,
+          "bundled": true,
+          "kind": "native-or-other",
+          "signals": []
+        },
+        {
+          "path": "pymavlink/generator/java/examples/Makefile",
+          "archived": false,
+          "bundled": true,
+          "kind": "native-or-other",
+          "signals": []
+        },
+        {
+          "path": "pymavlink/generator/javascript/Makefile",
+          "archived": false,
+          "bundled": true,
+          "kind": "native-or-other",
+          "signals": []
+        },
+        {
+          "path": "pymavlink/generator/javascript/package.json",
+          "archived": false,
+          "bundled": true,
+          "kind": "node",
+          "name": "mavlink",
+          "dependencies": {
+            "babel-eslint": "^10.0.3",
+            "glob": "^7.1.6",
+            "jspack": "file:local_modules/jspack",
+            "long": "file:local_modules/long",
+            "mocha": "^10.2.0",
+            "should": "^13.2.3",
+            "underscore": "1.12.1",
+            "winston": "3.2.1"
+          },
+          "devDependencies": {
+            "eslint": "^6.1.0",
+            "mocha": "",
+            "should": "",
+            "sinon": "^15.2.0"
+          }
+        },
+        {
+          "path": "pymavlink/generator/javascript_stable/Makefile",
+          "archived": false,
+          "bundled": true,
+          "kind": "native-or-other",
+          "signals": []
+        },
+        {
+          "path": "pymavlink/generator/javascript_stable/package.json",
+          "archived": false,
+          "bundled": true,
+          "kind": "node",
+          "name": "mavlink",
+          "dependencies": {
+            "babel-eslint": "^10.0.3",
+            "jspack": "0.0.4",
+            "underscore": "1.12.1",
+            "winston": "3.2.1"
+          },
+          "devDependencies": {
+            "eslint": "^6.1.0",
+            "mocha": "",
+            "should": "",
+            "sinon": ""
+          }
+        },
+        {
+          "path": "pymavlink/pyproject.toml",
+          "archived": false,
+          "bundled": true,
+          "kind": "python",
+          "signals": [],
+          "dependencyNames": [
+            "requires",
+            "build-backend"
+          ]
+        },
+        {
+          "path": "pymavlink/requirements.txt",
+          "archived": false,
+          "bundled": true,
+          "kind": "python",
+          "signals": [],
+          "dependencyNames": [
+            "lxml",
+            "future",
+            "wheel",
+            "setuptools",
+            "pytest"
+          ]
+        }
+      ],
+      "markers": [
+        "pymavlink/generator/javascript/package-lock.json",
+        "pymavlink/generator/javascript_stable/package-lock.json"
+      ]
+    },
+    {
+      "name": "unigate",
+      "path": "D:\\Project\\unigate",
+      "sourceExtensions": {
+        ".java": 27,
+        ".js": 3,
+        ".html": 19,
+        ".py": 6,
+        ".vue": 7,
+        ".ts": 17
+      },
+      "manifests": [
+        {
+          "path": "backend/pom.xml",
+          "archived": false,
+          "bundled": false,
+          "kind": "java",
+          "signals": [
+            "<modelVersion>4.0.0</modelVersion><parent><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-parent</artifactId><version>3.5.16</version><relativePath/></parent>",
+            "<groupId>com.unigate</groupId><artifactId>unigate</artifactId><version>0.1.0</version><name>UniGate</name>",
+            "<properties><java.version>21</java.version><flyway.version>11.20.3</flyway.version></properties>",
+            "<dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-web</artifactId></dependency>",
+            "<dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-jdbc</artifactId></dependency>",
+            "<dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-mail</artifactId></dependency>",
+            "<dependency><groupId>org.flywaydb</groupId><artifactId>flyway-database-postgresql</artifactId></dependency>",
+            "<dependency><groupId>org.postgresql</groupId><artifactId>postgresql</artifactId><scope>runtime</scope></dependency>",
+            "<dependency><groupId>org.apache.commons</groupId><artifactId>commons-csv</artifactId><version>1.14.1</version></dependency>",
+            "<dependency><groupId>org.apache.poi</groupId><artifactId>poi-ooxml</artifactId><version>5.4.1</version></dependency>",
+            "<dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-test</artifactId><scope>test</scope></dependency>",
+            "<build><resources><resource><directory>src/main/resources</directory></resource><resource><directory>../profiles/unigate/workspace/02-detailed/api</directory><includes><include>openapi-unigate.json</i"
+          ]
+        },
+        {
+          "path": "frontend/package.json",
+          "archived": false,
+          "bundled": false,
+          "kind": "node",
+          "name": "unigate-web",
+          "engines": {
+            "node": ">=22.12.0"
+          },
+          "dependencies": {
+            "@zxing/browser": "0.2.0",
+            "@zxing/library": "0.21.3",
+            "qrcode": "1.5.4",
+            "vue": "3.5.44",
+            "vue-router": "4.6.4"
+          },
+          "devDependencies": {
+            "@types/qrcode": "1.5.6",
+            "@vitejs/plugin-vue": "6.0.10",
+            "@vitest/coverage-v8": "4.1.0",
+            "@vue/test-utils": "2.4.6",
+            "jsdom": "28.1.0",
+            "typescript": "5.9.3",
+            "vite": "8.3.5",
+            "vitest": "4.1.0",
+            "vue-tsc": "3.3.13"
+          }
+        }
+      ],
+      "markers": [
+        "compose.yaml",
+        "deploy/docker-compose.yml",
+        "frontend/package-lock.json"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+DevToolbox
+Copyright (c) 2026 Xinyi Zhang
+
+This product is built on behavior and logic migrated from two earlier
+projects by the same author, both licensed under the MIT License:
+
+- gitid (https://github.com/xyztony999/gitid)
+  Copyright (c) 2026 Xinyi Zhang
+  Source of the Git identity semantics: profiles, full-coverage apply,
+  includeIf directory binding, repository scan/audit, doctor, mirror push
+  and the credential conduit.
+
+- DevSwitch (https://github.com/xyztony999/devswitch)
+  Copyright (c) 2026 xyztony999
+  Source of the runtime management semantics: seven-tool discovery and
+  registration, user-level runtime state, and the download provider
+  behaviors (Node, Java, Maven, Gradle, Android SDK, Go, Python).
+
+Third-party runtime dependencies remain under their own licenses:
+github.com/webview/webview_go (MIT), github.com/ulikunitz/xz (BSD-3-Clause).
