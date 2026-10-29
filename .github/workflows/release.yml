@@ -122,7 +122,7 @@ jobs:
             /DBinGui="$PWD\dist\dev-toolbox-gui.exe" `
             /DBinCli="$PWD\dist\dev-toolbox.exe" `
             tools\installer\dev-toolbox.iss
-      - name: 便携版 zip
+      - name: 便携版 zip 与安装包平铺
         shell: pwsh
         run: |
           $version = $env:GITHUB_REF_NAME -replace '^v', ''
@@ -130,11 +130,13 @@ jobs:
           New-Item -ItemType Directory -Force -Path "pack/$stage" | Out-Null
           Copy-Item dist/dev-toolbox-gui.exe, dist/dev-toolbox.exe, LICENSE, NOTICE, README.md "pack/$stage/"
           Compress-Archive -Path "pack/$stage" -DestinationPath "$stage.zip"
+          # 平铺到根，避免 upload-artifact 保留 dist/ 层级导致发布作业 glob 不中
+          Copy-Item "dist/dev-toolbox-gui-$version-windows-amd64-setup.exe" .
       - uses: actions/upload-artifact@v4
         with:
           name: gui-windows-amd64
           path: |
-            dist/dev-toolbox-gui-*-windows-amd64-setup.exe
+            dev-toolbox-gui-*-windows-amd64-setup.exe
             dev-toolbox-gui-*-windows-amd64.zip
 
   release:
