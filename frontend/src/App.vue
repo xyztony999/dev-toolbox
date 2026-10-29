@@ -131,23 +131,23 @@ onMounted(loadProjects)
   <a-config-provider :theme="antTheme">
   <a-layout class="shell">
     <a-layout-sider class="sidebar" width="264" breakpoint="lg" collapsed-width="0">
-      <div class="brand"><span class="brand-mark"><svg width="22" height="22" viewBox="0 0 512 512" aria-hidden="true"><g stroke="#80e0c0" stroke-width="28.8" stroke-linecap="round" fill="none"><line x1="168" y1="140" x2="168" y2="297"/><path d="M340 168 v24 a129.6 129.6 0 0 1 -129.6 129.6"/></g><circle cx="168" cy="140" r="52" fill="#80e0c0"/><circle cx="340" cy="168" r="43.2" fill="#80e0c0"/><circle cx="168" cy="340" r="43.2" fill="#80e0c0"/></svg></span><div><strong>DevToolbox</strong><small>开发环境与 Git 身份</small></div></div>
+      <div class="brand"><span class="brand-mark"><svg width="34" height="34" viewBox="40 40 432 432" aria-hidden="true"><defs><linearGradient id="dtxg-a" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1a3a5c"/><stop offset="1" stop-color="#0b1c2e"/></linearGradient></defs><rect x="40" y="40" width="432" height="432" rx="96" fill="url(#dtxg-a)"/><line x1="168" y1="140" x2="168" y2="297" stroke="#80e0c0" stroke-width="28.8" stroke-linecap="round"/><path d="M340 192 A129.6 129.6 0 0 1 210.4 321.6" fill="none" stroke="#80e0c0" stroke-width="28.8" stroke-linecap="round"/><circle cx="168" cy="140" r="52" fill="#80e0c0"/><circle cx="340" cy="168" r="43.2" fill="#80e0c0"/><circle cx="168" cy="340" r="43.2" fill="#80e0c0"/><circle cx="348" cy="330" r="34" fill="#eafcf4"/><circle cx="402" cy="330" r="26" fill="none" stroke="#80e0c0" stroke-width="13"/></svg></span><div><strong>DevToolbox</strong><small>开发环境与 Git 身份</small></div></div>
       <div class="side-heading">全局能力</div>
       <a-menu :selected-keys="view === 'runtime' ? ['runtime-settings'] : view === 'git' ? ['git-identity'] : ['projects-home']" mode="inline" class="project-menu">
         <a-menu-item key="projects-home" @click="activeId = ''; view = 'projects'">
-          <span class="menu-icon"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="#80e0c0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></g><circle cx="12" cy="13.5" r="2.4" fill="#80e0c0"/></svg></span>
+          <span class="menu-line"><span class="menu-icon"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="#80e0c0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></g><circle cx="12" cy="13.5" r="2.4" fill="#80e0c0"/></svg></span>
           <span class="menu-text"><span class="menu-project">项目上下文</span>
-          <span class="menu-meta">登记并扫描开发项目</span></span>
+          <span class="menu-meta">登记并扫描开发项目</span></span></span>
         </a-menu-item>
         <a-menu-item key="runtime-settings" @click="view = 'runtime'">
-          <span class="menu-icon"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="#80e0c0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 3 3 8 12 13 21 8"/><polyline points="3 12.5 12 17.5 21 12.5"/><polyline points="3 17 12 22 21 17"/></g></svg></span>
+          <span class="menu-line"><span class="menu-icon"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="#80e0c0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 3 3 8 12 13 21 8"/><polyline points="3 12.5 12 17.5 21 12.5"/><polyline points="3 17 12 22 21 17"/></g></svg></span>
           <span class="menu-text"><span class="menu-project">用户级运行时设置</span>
-          <span class="menu-meta">获取运行时、全局默认与导入</span></span>
+          <span class="menu-meta">获取运行时、全局默认与导入</span></span></span>
         </a-menu-item>
         <a-menu-item key="git-identity" @click="view = 'git'">
-          <span class="menu-icon"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="#80e0c0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.6"/><circle cx="6" cy="18" r="2.6"/><circle cx="18" cy="8" r="2.6"/><path d="M6 8.6v6.8"/><path d="M18 10.6a8 8 0 0 1-8 7.4"/></g></svg></span>
+          <span class="menu-line"><span class="menu-icon"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="#80e0c0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.6"/><circle cx="6" cy="18" r="2.6"/><circle cx="18" cy="8" r="2.6"/><path d="M6 8.6v6.8"/><path d="M18 10.6a8 8 0 0 1-8 7.4"/></g></svg></span>
           <span class="menu-text"><span class="menu-project">Git 身份</span>
-          <span class="menu-meta">档案、目录绑定与仓库审计</span></span>
+          <span class="menu-meta">档案、目录绑定与仓库审计</span></span></span>
         </a-menu-item>
       </a-menu>
       <template v-if="projects.length">
@@ -178,7 +178,6 @@ onMounted(loadProjects)
         <RuntimeSettings v-if="view === 'runtime'" />
         <GitIdentity v-else-if="view === 'git'" />
         <section v-else-if="!selected || candidate" class="section add-panel">
-          <div class="section-title"><div><h2>登记项目</h2><p>扫描只读取支持的项目清单，不运行脚本或 Wrapper。</p></div></div>
           <div class="path-entry">
             <a-input v-model:value="rootPath" placeholder="输入项目目录的完整路径" @press-enter="scanProject" />
             <a-button type="primary" :loading="busy" @click="scanProject">扫描预览</a-button>
