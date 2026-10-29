@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Go 核心（gofmt / vet / test）— ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: gofmt 检查（仅 Linux 执行，避免换行差异）
+        if: matrix.os == 'ubuntu-latest'
+        run: test -z "$(gofmt -l internal cmd tools)"
+      - name: go vet
+        run: go vet ./...
+      - name: go test
+        run: go test ./internal/... -count=1
+
+  frontend:
+    name: 前端（typecheck / 构建）
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: 安装依赖
+        run: npm ci --prefix frontend
+      - name: 类型检查
+        run: npm --prefix frontend run typecheck
+      - name: 构建内嵌单文件包
+        run: npm --prefix frontend run build:desktop
+
+  gui-windows:
+    name: 桌面宿主（CGO + WebView 编译）
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: 生成内嵌前端
+        shell: pwsh
+        run: |
+          npm ci --prefix frontend
+          npm --prefix frontend run build:desktop
+      - name: CGO 编译 GUI
+        shell: pwsh
+        run: |
+          $env:Path = 'C:\msys64\mingw64\bin;' + $env:Path
+          $env:CGO_ENABLED = '1'
+          go build -tags gui -ldflags="-H windowsgui" -o dev-toolbox-gui.exe ./cmd/dev-toolbox
+      - name: 上传构建产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: dev-toolbox-gui-windows
+          path: dev-toolbox-gui.exe
+          retention-days: 7

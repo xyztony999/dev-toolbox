@@ -1,5 +1,7 @@
 # DevToolbox
 
+[![CI](https://github.com/xyztony999/dev-toolbox/actions/workflows/ci.yml/badge.svg)](https://github.com/xyztony999/dev-toolbox/actions/workflows/ci.yml)
+
 多技术栈项目的开发环境与 Git 身份管理工具箱。以项目为入口，把"这个项目用哪套运行时、哪个 Git 身份"变成一眼可见、显式确认的一键操作。
 
 - Go 共用业务核心：CLI 与桌面客户端调用同一应用服务。
