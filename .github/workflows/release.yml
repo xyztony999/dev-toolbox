@@ -81,7 +81,8 @@ jobs:
       - name: 打包
         shell: pwsh
         run: |
-          $stage = "dev-toolbox-gui-${env:GITHUB_REF_NAME -replace '^v',''}-windows-amd64"
+          $version = $env:GITHUB_REF_NAME -replace '^v', ''
+          $stage = "dev-toolbox-gui-$version-windows-amd64"
           New-Item -ItemType Directory -Force -Path "pack/$stage" | Out-Null
           Copy-Item dist/dev-toolbox-gui.exe "pack/$stage/"
           Copy-Item LICENSE, NOTICE, README.md "pack/$stage/"
