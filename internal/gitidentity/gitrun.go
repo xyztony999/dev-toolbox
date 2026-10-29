@@ -11,6 +11,7 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 )
 
@@ -135,6 +136,11 @@ func startProcess(ctx context.Context, cwd string, env []string, stdin string, a
 		Dir:   cwd,
 		Env:   fullEnv,
 		Files: []*os.File{stdinFile, outFile, errFile},
+	}
+	if runtime.GOOS == "windows" {
+		// git.exe 是控制台程序：不加 CREATE_NO_WINDOW 时，每次 spawn 都会
+		// 从 GUI 进程里弹出一个一闪而过的控制台窗口。
+		attr.Sys = &syscall.SysProcAttr{HideWindow: true, CreationFlags: 0x08000000}
 	}
 	proc, err := os.StartProcess(exePath, argv, attr)
 	stdoutWriter.Close()
