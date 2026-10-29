@@ -62,10 +62,10 @@ AutoReqProv:    no
 
 %install
 rm -rf "%{buildroot}"
-install -D -m 0755 "%{pkgbin}" "%{buildroot}/usr/bin/dev-toolbox"
-install -D -m 0644 "%{pkgrepo}/LICENSE" "%{buildroot}/usr/share/licenses/dev-toolbox/LICENSE"
-install -D -m 0644 "%{pkgrepo}/NOTICE" "%{buildroot}/usr/share/licenses/dev-toolbox/NOTICE"
-install -D -m 0644 "%{pkgrepo}/README.md" "%{buildroot}/usr/share/doc/dev-toolbox/README.md"
+install -D -m 0755 "%{_pkgbin}" "%{buildroot}/usr/bin/dev-toolbox"
+install -D -m 0644 "%{_pkgrepo}/LICENSE" "%{buildroot}/usr/share/licenses/dev-toolbox/LICENSE"
+install -D -m 0644 "%{_pkgrepo}/NOTICE" "%{buildroot}/usr/share/licenses/dev-toolbox/NOTICE"
+install -D -m 0644 "%{_pkgrepo}/README.md" "%{buildroot}/usr/share/doc/dev-toolbox/README.md"
 
 %files
 /usr/bin/dev-toolbox
