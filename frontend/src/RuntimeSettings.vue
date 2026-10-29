@@ -13,6 +13,7 @@ interface RuntimeCandidate { candidateId: string; digest: string; tool: string; 
 interface DiscoveryResult { status: string; candidates: RuntimeCandidate[]; issues: Array<{path: string; code: string; message: string}> }
 interface RegistrationResult { state: UserState; counts: {created: number; linked: number; skipped: number} }
 
+const tab = ref('defaults')
 const state = ref<UserState>()
 const inspection = ref<LegacyInspection>()
 const preview = ref<LegacyPreview>()
@@ -144,71 +145,78 @@ onMounted(reload)
 
 <template>
   <a-alert v-if="errorText" type="error" show-icon closable :message="errorText" class="page-alert" />
-  <RuntimeInstall />
-  <section class="section">
-    <div class="section-title"><div><h2>发现本机运行时</h2></div></div>
-    <div class="toolbar">
-      <a-input v-model:value="discoveryRoot" class="grow" placeholder="可选：指定目录（只检查该目录及直接子目录）" />
-      <a-select v-model:value="inspectTool" style="width: 132px" :options="['node', 'java', 'maven', 'gradle', 'androidsdk', 'golang', 'python'].map((value) => ({ label: value, value }))" />
-      <a-button :loading="busy" @click="discoverRuntimes">扫描本机</a-button>
-      <a-button :loading="busy" :disabled="!discoveryRoot.trim()" @click="inspectRuntimePath">检查指定目录</a-button>
-      <a-button type="primary" :disabled="!selectedCandidates.length" :loading="busy" @click="registerCandidates">登记所选</a-button>
-    </div>
-    <a-alert v-if="discoveryStatus" :type="discoveryStatus === 'partial' ? 'warning' : 'info'" :message="scanStatusLabel[discoveryStatus] ?? discoveryStatus" show-icon class="page-alert" />
-    <a-empty v-if="!candidates.length" description="尚无待登记候选" />
-    <a-checkbox-group v-else v-model:value="selectedCandidates" class="candidate-list">
-      <div v-for="item in candidates" :key="item.candidateId" class="candidate-row">
-        <a-checkbox :value="item.candidateId" />
-        <div><strong>{{ item.tool }} · {{ item.version }}</strong><small>{{ item.home }}</small><small>来源 {{ item.source }} · 证据 {{ item.confidence }} · {{ item.evidence.join('、') }}</small></div>
-        <a-tag :color="item.availability === 'available' ? 'green' : 'orange'">{{ item.availability }}</a-tag>
-      </div>
-    </a-checkbox-group>
-  </section>
+  <a-tabs v-model:activeKey="tab" class="settings-tabs">
 
-  <section class="section">
-    <div class="section-title"><div><h2>全局默认</h2></div><a-button @click="reload" :loading="busy">刷新</a-button></div>
-    <a-empty v-if="!state?.installations.length" description="尚无已登记运行时；可导入 DevSwitch 用户状态。" />
-    <div v-for="tool in ['node', 'java', 'maven', 'gradle', 'androidsdk', 'golang', 'python']" :key="tool" class="runtime-pref-row">
-      <div><strong>{{ tool }}</strong><small>{{ selectedLabel(tool) }}</small></div>
-      <a-space wrap>
-        <a-button v-for="item in state?.installations.filter((entry) => entry.runtime === tool) ?? []" :key="item.id" size="small" :disabled="!item.available || state?.globalSelections[tool]?.installationId === item.id" @click="setDefault(tool, item.id)">
-          设为默认 · {{ item.version || item.label || item.localHome }}
-        </a-button>
-      </a-space>
-    </div>
-  </section>
-
-  <section class="section">
-    <div class="section-title"><div><h2>导入 DevSwitch 用户设置</h2></div></div>
-    <template v-if="inspection?.found">
-      <div class="source-box"><span>来源</span><code>{{ inspection.sourcePath }}</code><a-tag>{{ inspection.valid ? `schema ${inspection.schema}` : '格式无效或不支持' }}</a-tag></div>
-      <a-alert v-if="!inspection.valid" type="warning" show-icon message="当前来源不能导入，请保留旧状态文件并先处理格式问题。" />
-      <a-button v-else type="primary" :loading="busy" @click="previewImport">预览导入</a-button>
-    </template>
-    <a-empty v-else description="未发现 DevSwitch 用户状态文件" />
-    <template v-if="preview">
-      <a-divider />
-      <div class="preview-grid">
-        <div class="preview-stat"><strong>{{ preview.installations.length }}</strong><span>运行时条目</span></div>
-        <div class="preview-stat"><strong>{{ preview.unresolved.length }}</strong><span>待重新关联</span></div>
-        <div class="preview-stat"><strong>{{ preview.duplicateCount }}</strong><span>重复条目</span></div>
-        <div class="preview-stat"><strong>{{ preview.unsupported.length }}</strong><span>未支持条目</span></div>
+    <a-tab-pane key="defaults" tab="全局默认">
+      <div class="group-actions"><a-button :loading="busy" @click="reload">刷新</a-button></div>
+      <a-empty v-if="!state?.installations.length" description="尚无已登记运行时；可在「获取运行时」下载，或「导入」迁移 DevSwitch 用户状态。" />
+      <div v-for="tool in ['node', 'java', 'maven', 'gradle', 'androidsdk', 'golang', 'python']" :key="tool" class="runtime-pref-row">
+        <div><strong>{{ tool }}</strong><small>{{ selectedLabel(tool) }}</small></div>
+        <a-space wrap>
+          <a-button v-for="item in state?.installations.filter((entry) => entry.runtime === tool) ?? []" :key="item.id" size="small" :disabled="!item.available || state?.globalSelections[tool]?.installationId === item.id" @click="setDefault(tool, item.id)">
+            设为默认 {{ item.version || item.label || item.localHome }}
+          </a-button>
+        </a-space>
       </div>
-      <p class="muted">导入前备份目录：{{ preview.backupDirectory }}</p>
-      <div v-for="item in preview.installations" :key="item.id" class="runtime-pref-row">
-        <div><strong>{{ item.runtime }} {{ item.version || '版本未知' }}</strong><small>{{ item.localHome }}</small></div>
-        <a-tag :color="item.available ? 'green' : 'orange'">{{ item.available ? '路径可用' : '路径不可用' }}</a-tag>
-      </div>
-      <div class="form-actions"><a-button @click="preview = undefined">取消</a-button><a-button type="primary" :loading="busy" @click="importLegacy">备份并导入</a-button></div>
-    </template>
-  </section>
+    </a-tab-pane>
 
-  <section v-if="state?.legacyImports.length" class="section">
-    <div class="section-title"><div><h2>导入记录</h2></div></div>
-    <div v-for="record in state.legacyImports" :key="record.sourceDigest" class="repo-row"><div><strong>{{ new Date(record.importedAt).toLocaleString() }}</strong><small>新建 {{ record.created }} · 关联 {{ record.linked }} · 待处理 {{ record.unresolved }} · 冲突 {{ record.conflicts }}</small></div><a-tag>{{ record.sourceDigest.slice(0, 12) }}</a-tag></div>
-  </section>
+    <a-tab-pane key="install" tab="获取运行时">
+      <RuntimeInstall />
+    </a-tab-pane>
+
+    <a-tab-pane key="discover" tab="发现与登记">
+      <div class="toolbar">
+        <a-input v-model:value="discoveryRoot" class="grow" placeholder="可选：指定目录（只检查该目录及直接子目录）" />
+        <a-select v-model:value="inspectTool" style="width: 132px" :options="['node', 'java', 'maven', 'gradle', 'androidsdk', 'golang', 'python'].map((value) => ({ label: value, value }))" />
+        <a-button :loading="busy" @click="discoverRuntimes">扫描本机</a-button>
+        <a-button :loading="busy" :disabled="!discoveryRoot.trim()" @click="inspectRuntimePath">检查指定目录</a-button>
+        <a-button type="primary" :disabled="!selectedCandidates.length" :loading="busy" @click="registerCandidates">登记所选</a-button>
+      </div>
+      <a-alert v-if="discoveryStatus" :type="discoveryStatus === 'partial' ? 'warning' : 'info'" :message="scanStatusLabel[discoveryStatus] ?? discoveryStatus" show-icon class="page-alert" />
+      <a-empty v-if="!candidates.length" description="尚无待登记候选" />
+      <a-checkbox-group v-else v-model:value="selectedCandidates" class="candidate-list">
+        <div v-for="item in candidates" :key="item.candidateId" class="candidate-row">
+          <a-checkbox :value="item.candidateId" />
+          <div><strong>{{ item.tool }}，{{ item.version }}</strong><small>{{ item.home }}</small><small>来源 {{ item.source }}，证据 {{ item.confidence }}，{{ item.evidence.join('、') }}</small></div>
+          <a-tag :color="item.availability === 'available' ? 'green' : 'orange'">{{ item.availability }}</a-tag>
+        </div>
+      </a-checkbox-group>
+    </a-tab-pane>
+
+    <a-tab-pane key="import" tab="导入">
+      <div class="group-label">从 DevSwitch 迁移用户设置</div>
+      <template v-if="inspection?.found">
+        <div class="source-box"><span>来源</span><code>{{ inspection.sourcePath }}</code><a-tag>{{ inspection.valid ? `schema ${inspection.schema}` : '格式无效或不支持' }}</a-tag></div>
+        <a-alert v-if="!inspection.valid" type="warning" show-icon message="当前来源不能导入，请保留旧状态文件并先处理格式问题。" />
+        <a-button v-else type="primary" :loading="busy" @click="previewImport">预览导入</a-button>
+      </template>
+      <a-empty v-else description="未发现 DevSwitch 用户状态文件" />
+      <template v-if="preview">
+        <a-divider />
+        <div class="preview-grid">
+          <div class="preview-stat"><strong>{{ preview.installations.length }}</strong><span>运行时条目</span></div>
+          <div class="preview-stat"><strong>{{ preview.unresolved.length }}</strong><span>待重新关联</span></div>
+          <div class="preview-stat"><strong>{{ preview.duplicateCount }}</strong><span>重复条目</span></div>
+          <div class="preview-stat"><strong>{{ preview.unsupported.length }}</strong><span>未支持条目</span></div>
+        </div>
+        <p class="muted">导入前备份目录：{{ preview.backupDirectory }}</p>
+        <div v-for="item in preview.installations" :key="item.id" class="runtime-pref-row">
+          <div><strong>{{ item.runtime }} {{ item.version || '版本未知' }}</strong><small>{{ item.localHome }}</small></div>
+          <a-tag :color="item.available ? 'green' : 'orange'">{{ item.available ? '路径可用' : '路径不可用' }}</a-tag>
+        </div>
+        <div class="form-actions"><a-button @click="preview = undefined">取消</a-button><a-button type="primary" :loading="busy" @click="importLegacy">备份并导入</a-button></div>
+      </template>
+      <template v-if="state?.legacyImports.length">
+        <a-divider />
+        <div class="group-label">导入记录</div>
+        <div v-for="record in state.legacyImports" :key="record.sourceDigest" class="repo-row"><div><strong>{{ new Date(record.importedAt).toLocaleString() }}</strong><small>新建 {{ record.created }}，关联 {{ record.linked }}，待处理 {{ record.unresolved }}，冲突 {{ record.conflicts }}</small></div><a-tag>{{ record.sourceDigest.slice(0, 12) }}</a-tag></div>
+      </template>
+    </a-tab-pane>
+  </a-tabs>
 </template>
 
 <style scoped>
-.runtime-pref-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 0;border-top:1px solid var(--border-soft)}.runtime-pref-row strong,.runtime-pref-row small{display:block;overflow-wrap:anywhere}.runtime-pref-row small{margin-top:5px;color:var(--text-muted)}.source-box{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:20px;padding:14px;border-radius:8px;background:var(--bg-soft)}.source-box code{overflow-wrap:anywhere;color:var(--text-code)}.candidate-list{display:block}.candidate-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--border-soft)}.candidate-row>div{flex:1;min-width:0}.candidate-row strong,.candidate-row small{display:block;overflow-wrap:anywhere}.candidate-row small{margin-top:4px;color:var(--text-muted)}@media(max-width:640px){.runtime-pref-row{align-items:flex-start;flex-direction:column}.candidate-row{align-items:flex-start}}
+.group-label{font-weight:600;font-size:13.5px;color:var(--text-title);margin:0 0 10px}
+.group-actions{display:flex;justify-content:flex-end;gap:9px;margin-bottom:14px}
+.runtime-pref-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 0;border-top:1px solid var(--border-soft)}.runtime-pref-row strong,.runtime-pref-row small{display:block;overflow-wrap:anywhere}.runtime-pref-row small{margin-top:5px;color:var(--text-muted)}.source-box{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:18px;padding:12px 14px;border-radius:8px;background:var(--bg-soft)}.source-box code{overflow-wrap:anywhere;color:var(--text-code)}.candidate-list{display:block}.candidate-row{display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px solid var(--border-soft)}.candidate-row>div{flex:1;min-width:0}.candidate-row strong,.candidate-row small{display:block;overflow-wrap:anywhere}.candidate-row small{margin-top:4px;color:var(--text-muted)}.settings-tabs :deep(.ant-tabs-tab){padding:8px 4px}@media(max-width:640px){.runtime-pref-row{align-items:flex-start;flex-direction:column}.candidate-row{align-items:flex-start}}
 </style>
