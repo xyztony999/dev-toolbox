@@ -188,6 +188,38 @@ func startProcess(ctx context.Context, cwd string, env []string, stdin string, a
 	return strings.TrimRight(out, "\r\n"), nil
 }
 
+// ReadLocalConfig 在 dir 仓库下读取本地 git 配置键（只读）。
+func ReadLocalConfig(ctx context.Context, dir, key string) (string, bool) {
+	value, ok := gitAt(ctx, dir).cfgGet("local", key)
+	return value, ok
+}
+
+// ReadBranch 返回 dir 仓库当前分支名；空仓库或非仓库返回 false。
+func ReadBranch(ctx context.Context, dir string) (string, bool) {
+	value, ok := gitAt(ctx, dir).allowFail("rev-parse", "--abbrev-ref", "HEAD")
+	trimmed := strings.TrimSpace(value)
+	return trimmed, ok && trimmed != ""
+}
+
+// ReadLocalRemote 返回 dir 仓库本地第一个 remote 的名称与地址。
+func ReadLocalRemote(ctx context.Context, dir string) (name, url string, ok bool) {
+	out, found := gitAt(ctx, dir).allowFail("config", "--local", "--get-regexp", `^remote\..+\.url$`)
+	if !found || out == "" {
+		return "", "", false
+	}
+	for _, line := range strings.Split(out, "\n") {
+		parts := strings.SplitN(strings.TrimSpace(line), " ", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		segments := strings.Split(parts[0], ".")
+		if len(segments) >= 3 {
+			return strings.Join(segments[1:len(segments)-1], "."), strings.TrimSpace(parts[1]), true
+		}
+	}
+	return "", "", false
+}
+
 func defaultRunGit(ctx context.Context, cwd string, env []string, stdin string, attachIO bool, args ...string) (string, error) {
 	finalArgs, err := gitArgs(args...)
 	if err != nil {

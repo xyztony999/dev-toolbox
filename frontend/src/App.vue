@@ -189,13 +189,16 @@ onMounted(loadProjects)
 
         <RuntimeSettings v-if="view === 'runtime'" />
         <GitIdentity v-else-if="view === 'git'" />
-        <section v-else-if="!selected || candidate" class="section add-panel">
+        <section v-else-if="!selected || candidate" class="register-hero">
+          <div class="hero-card">
           <div class="path-entry">
             <a-input v-model:value="rootPath" placeholder="项目目录的完整路径" @press-enter="scanProject" />
             <a-button :loading="picking" @click="pickFolder">浏览…</a-button>
             <a-button type="primary" :loading="busy" @click="scanProject">扫描预览</a-button>
           </div>
+          </div>
           <template v-if="candidate">
+            <div class="hero-preview">
             <div class="preview-heading">
               <div><h3>{{ candidate.displayName }}</h3><span class="muted">{{ candidate.rootPath }}</span></div>
               <a-tag :color="candidate.status === 'complete' ? 'green' : 'orange'">{{ candidate.status }}</a-tag>
@@ -216,20 +219,30 @@ onMounted(loadProjects)
               </div>
             </div>
             <a-alert v-for="issue in candidate.issues" :key="`${issue.code}-${issue.relativePath}`" :message="issue.message" :description="issue.relativePath" type="warning" show-icon class="issue-alert" />
+            <a-alert v-for="issue in candidate.issues" :key="`${issue.code}-${issue.relativePath}`" :message="issue.message" :description="issue.relativePath" type="warning" show-icon class="issue-alert" />
             <div class="form-actions"><a-button @click="candidate = undefined">取消</a-button><a-button type="primary" :loading="busy" @click="registerProject">确认登记</a-button></div>
+            </div>
           </template>
         </section>
 
         <template v-else-if="selected">
           <section class="summary-grid">
-            <div class="section summary-card"><span class="summary-label">项目目录</span><strong class="path-value">{{ selected.rootPath }}</strong></div>
-            <div class="section summary-card"><span class="summary-label">最近扫描</span><strong>{{ new Date(selected.lastScanAt).toLocaleString() }}</strong></div>
-            <div class="section summary-card"><span class="summary-label">扫描状态</span><a-tag :color="selected.scanStatus === 'complete' ? 'green' : 'orange'">{{ selected.scanStatus }}</a-tag></div>
+            <div class="summary-card"><span class="summary-label">项目目录</span><strong class="path-value">{{ selected.rootPath }}</strong></div>
+            <div class="summary-card"><span class="summary-label">最近扫描</span><strong>{{ new Date(selected.lastScanAt).toLocaleString() }}</strong></div>
+            <div class="summary-card"><span class="summary-label">扫描状态</span><a-tag :color="selected.scanStatus === 'complete' ? 'green' : 'orange'">{{ selected.scanStatus }}</a-tag></div>
           </section>
           <section class="section">
             <div class="section-title"><div><h2>仓库</h2></div></div>
             <a-empty v-if="selected.repositories.length === 0" description="未发现 Git 工作树" />
-            <div v-for="repo in selected.repositories" :key="repo.id" class="repo-row"><div><strong>{{ repo.path }}</strong><small>{{ repo.source }}</small></div><a-tag>{{ repo.kind }}</a-tag></div>
+            <div v-for="repo in selected.repositories" :key="repo.id" class="repo-row">
+              <div>
+                <strong>{{ repo.path }}</strong>
+                <small>{{ repo.source }}</small>
+                <small v-if="repo.branch">分支 {{ repo.branch }}<template v-if="repo.remoteName">，remote {{ repo.remoteName }}</template><template v-if="repo.userName">，{{ repo.userName }}<template v-if="repo.userEmail"> &lt;{{ repo.userEmail }}&gt;</template></template>（项目级）</small>
+                <small v-else-if="repo.remoteUrl">remote {{ repo.remoteName }}，{{ repo.remoteUrl }}</small>
+              </div>
+              <a-tag>{{ repo.kind }}</a-tag>
+            </div>
           </section>
           <section class="section">
             <div class="section-title"><div><h2>构建模块</h2></div></div>

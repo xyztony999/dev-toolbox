@@ -14,6 +14,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"dev-toolbox/internal/gitidentity"
 )
 
 const (
@@ -102,9 +104,16 @@ func scan(ctx context.Context, root string) (Candidate, error) {
 				if rel != "." && kind == "normal" {
 					kind = "nested"
 				}
-				candidate.Repositories = append(candidate.Repositories, Repository{
+				repo := Repository{
 					ID: stableID(path), Path: canonicalPath(path, canonical), Kind: kind, Source: ".git metadata",
-				})
+				}
+				repo.Branch, _ = gitidentity.ReadBranch(ctx, path)
+				if name, url, ok := gitidentity.ReadLocalRemote(ctx, path); ok {
+					repo.RemoteName, repo.RemoteURL = name, url
+				}
+				repo.UserName, _ = gitidentity.ReadLocalConfig(ctx, path, "user.name")
+				repo.UserEmail, _ = gitidentity.ReadLocalConfig(ctx, path, "user.email")
+				candidate.Repositories = append(candidate.Repositories, repo)
 			}
 			return nil
 		}

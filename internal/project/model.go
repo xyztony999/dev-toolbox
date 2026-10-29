@@ -38,10 +38,15 @@ type RuntimeRequirement struct {
 }
 
 type Repository struct {
-	ID     string `json:"id"`
-	Path   string `json:"path"`
-	Kind   string `json:"kind"`
-	Source string `json:"source"`
+	ID         string `json:"id"`
+	Path       string `json:"path"`
+	Kind       string `json:"kind"`
+	Source     string `json:"source"`
+	Branch     string `json:"branch,omitempty"`
+	RemoteName string `json:"remoteName,omitempty"`
+	RemoteURL  string `json:"remoteUrl,omitempty"`
+	UserName   string `json:"userName,omitempty"`
+	UserEmail  string `json:"userEmail,omitempty"`
 }
 
 type Module struct {

@@ -15,6 +15,11 @@ export interface Repository {
   path: string
   kind: 'normal' | 'worktree' | 'nested' | 'unknown'
   source: string
+  branch?: string
+  remoteName?: string
+  remoteUrl?: string
+  userName?: string
+  userEmail?: string
 }
 
 export interface Module {
