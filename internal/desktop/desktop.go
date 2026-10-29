@@ -93,6 +93,8 @@ func Run() {
 	w.Run()
 }
 
+var errCancelled = errors.New("FOLDER_PICK_CANCELLED")
+
 func invoke(req request) response {
 	if req.RequestID == "" || len(req.RequestID) > 128 {
 		return failed(req.RequestID, errors.New("INVALID_REQUEST"))
@@ -583,6 +585,8 @@ func invoke(req request) response {
 		if err = decode(req.Payload, &p); err == nil {
 			data, err = gitidentity.LegacyImport(ctx, gitStore(), p.SourceDigest, p.ProfileIDs, p.ConfirmBackup, p.ConfirmImport)
 		}
+	case "app.pickFolder":
+		data, err = pickFolderDialog()
 	default:
 		err = errors.New("OPERATION_NOT_ALLOWED")
 	}

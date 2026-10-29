@@ -22,6 +22,7 @@ const candidate = ref<Candidate>()
 const rootPath = ref('')
 const displayName = ref('')
 const busy = ref(false)
+const picking = ref(false)
 const errorText = ref('')
 const selected = computed(() => projects.value.find((item) => item.id === activeId.value))
 const view = ref<'projects' | 'runtime' | 'git'>('projects')
@@ -124,6 +125,17 @@ function requirementLabel(requirement: RuntimeRequirement): string {
   return `${requirement.runtime}: ${requirement.rawConstraint ?? 'unknown'}`
 }
 
+async function pickFolder() {
+  picking.value = true
+  try {
+    const path = await invoke<string>('app.pickFolder', {})
+    if (path) rootPath.value = path
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error)
+    if (!msg.includes('CANCELLED')) errorText.value = msg
+  } finally { picking.value = false }
+}
+
 onMounted(loadProjects)
 </script>
 
@@ -165,7 +177,7 @@ onMounted(loadProjects)
 
     <a-layout class="content-layout">
       <div class="page-head">
-          <div><h1>{{ viewMeta.title }}</h1><div v-if="view === 'projects' && selected" class="page-sub">{{ selected.rootPath }}</div><div v-else-if="view === 'projects'" class="page-sub">扫描只读取项目清单，不运行脚本或 Wrapper。</div></div>
+          <div><h1>{{ viewMeta.title }}</h1><div v-if="view === 'projects' && selected" class="page-sub">{{ selected.rootPath }}</div></div>
           <a-space v-if="view === 'projects' && selected">
             <a-button @click="rescan" :loading="busy">重新扫描</a-button>
             <a-button danger @click="removeProject">移除登记</a-button>
@@ -179,7 +191,8 @@ onMounted(loadProjects)
         <GitIdentity v-else-if="view === 'git'" />
         <section v-else-if="!selected || candidate" class="section add-panel">
           <div class="path-entry">
-            <a-input v-model:value="rootPath" placeholder="输入项目目录的完整路径" @press-enter="scanProject" />
+            <a-input v-model:value="rootPath" placeholder="项目目录的完整路径" @press-enter="scanProject" />
+            <a-button :loading="picking" @click="pickFolder">浏览…</a-button>
             <a-button type="primary" :loading="busy" @click="scanProject">扫描预览</a-button>
           </div>
           <template v-if="candidate">
@@ -214,12 +227,12 @@ onMounted(loadProjects)
             <div class="section summary-card"><span class="summary-label">扫描状态</span><a-tag :color="selected.scanStatus === 'complete' ? 'green' : 'orange'">{{ selected.scanStatus }}</a-tag></div>
           </section>
           <section class="section">
-            <div class="section-title"><div><h2>仓库</h2><p>依据 Git 元数据识别，不读取身份配置。</p></div></div>
+            <div class="section-title"><div><h2>仓库</h2></div></div>
             <a-empty v-if="selected.repositories.length === 0" description="未发现 Git 工作树" />
             <div v-for="repo in selected.repositories" :key="repo.id" class="repo-row"><div><strong>{{ repo.path }}</strong><small>{{ repo.source }}</small></div><a-tag>{{ repo.kind }}</a-tag></div>
           </section>
           <section class="section">
-            <div class="section-title"><div><h2>构建模块</h2><p>版本要求保留原始约束与来源；未声明时显示 unknown。</p></div></div>
+            <div class="section-title"><div><h2>构建模块</h2></div></div>
             <a-empty v-if="selected.modules.length === 0" description="未发现支持的构建清单" />
             <div v-for="module in selected.modules" :key="module.id" class="module-card">
               <div class="module-header"><strong>{{ module.relativePath }}</strong><a-space wrap><a-tag v-for="build in module.buildSystems" :key="build">{{ build }}</a-tag></a-space></div>
@@ -234,7 +247,7 @@ onMounted(loadProjects)
             </div>
           </section>
           <section v-if="selected.issues?.length" class="section">
-            <div class="section-title"><div><h2>扫描提示</h2><p>部分路径可能未能读取。</p></div></div>
+            <div class="section-title"><div><h2>扫描提示</h2></div></div>
             <a-alert v-for="issue in selected.issues" :key="`${issue.code}-${issue.relativePath}`" :message="issue.message" :description="issue.relativePath" type="warning" show-icon class="issue-alert" />
           </section>
         </template>
