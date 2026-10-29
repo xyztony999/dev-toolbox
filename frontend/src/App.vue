@@ -135,16 +135,19 @@ onMounted(loadProjects)
       <div class="side-heading">全局能力</div>
       <a-menu :selected-keys="view === 'runtime' ? ['runtime-settings'] : view === 'git' ? ['git-identity'] : ['projects-home']" mode="inline" class="project-menu">
         <a-menu-item key="projects-home" @click="activeId = ''; view = 'projects'">
-          <span class="menu-project">项目上下文</span>
-          <span class="menu-meta">登记并扫描开发项目</span>
+          <span class="menu-icon"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="#80e0c0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></g><circle cx="12" cy="13.5" r="2.4" fill="#80e0c0"/></svg></span>
+          <span class="menu-text"><span class="menu-project">项目上下文</span>
+          <span class="menu-meta">登记并扫描开发项目</span></span>
         </a-menu-item>
         <a-menu-item key="runtime-settings" @click="view = 'runtime'">
-          <span class="menu-project">用户级运行时设置</span>
-          <span class="menu-meta">获取运行时、全局默认与导入</span>
+          <span class="menu-icon"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="#80e0c0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 3 3 8 12 13 21 8"/><polyline points="3 12.5 12 17.5 21 12.5"/><polyline points="3 17 12 22 21 17"/></g></svg></span>
+          <span class="menu-text"><span class="menu-project">用户级运行时设置</span>
+          <span class="menu-meta">获取运行时、全局默认与导入</span></span>
         </a-menu-item>
         <a-menu-item key="git-identity" @click="view = 'git'">
-          <span class="menu-project">Git 身份</span>
-          <span class="menu-meta">档案、目录绑定与仓库审计</span>
+          <span class="menu-icon"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="#80e0c0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.6"/><circle cx="6" cy="18" r="2.6"/><circle cx="18" cy="8" r="2.6"/><path d="M6 8.6v6.8"/><path d="M18 10.6a8 8 0 0 1-8 7.4"/></g></svg></span>
+          <span class="menu-text"><span class="menu-project">Git 身份</span>
+          <span class="menu-meta">档案、目录绑定与仓库审计</span></span>
         </a-menu-item>
       </a-menu>
       <template v-if="projects.length">

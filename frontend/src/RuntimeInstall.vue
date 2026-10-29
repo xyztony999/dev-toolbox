@@ -164,7 +164,7 @@ onUnmounted(() => {
 
 <template>
   <section class="section">
-    <div class="section-title"><div><h2>获取运行时</h2><p>从固定 provider 下载并登记到本机清单；不自动切换默认、不改系统环境。</p></div></div>
+    <div class="section-title"><div><h2>获取运行时</h2></div></div>
     <div class="toolbar">
       <a-select v-model:value="tool" :options="tools.map((value) => ({ label: value, value }))" :disabled="taskActive" @change="onToolChange" />
       <a-select v-model:value="mirror" :options="mirrors.map((item) => ({ label: item.label, value: item.id }))" :disabled="taskActive || !mirrors.length" />

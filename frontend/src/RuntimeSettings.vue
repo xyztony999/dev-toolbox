@@ -146,7 +146,7 @@ onMounted(reload)
   <a-alert v-if="errorText" type="error" show-icon closable :message="errorText" class="page-alert" />
   <RuntimeInstall />
   <section class="section">
-    <div class="section-title"><div><h2>发现本机运行时</h2><p>只读取文件证据，不运行候选程序。</p></div></div>
+    <div class="section-title"><div><h2>发现本机运行时</h2></div></div>
     <div class="toolbar">
       <a-input v-model:value="discoveryRoot" class="grow" placeholder="可选：指定目录（只检查该目录及直接子目录）" />
       <a-select v-model:value="inspectTool" style="width: 132px" :options="['node', 'java', 'maven', 'gradle', 'androidsdk', 'golang', 'python'].map((value) => ({ label: value, value }))" />
@@ -166,7 +166,7 @@ onMounted(reload)
   </section>
 
   <section class="section">
-    <div class="section-title"><div><h2>用户级全局默认</h2><p>只影响未被项目或会话覆盖的后续启动；不改变已打开终端。</p></div><a-button @click="reload" :loading="busy">刷新</a-button></div>
+    <div class="section-title"><div><h2>全局默认</h2></div><a-button @click="reload" :loading="busy">刷新</a-button></div>
     <a-empty v-if="!state?.installations.length" description="尚无已登记运行时；可导入 DevSwitch 用户状态。" />
     <div v-for="tool in ['node', 'java', 'maven', 'gradle', 'androidsdk', 'golang', 'python']" :key="tool" class="runtime-pref-row">
       <div><strong>{{ tool }}</strong><small>{{ selectedLabel(tool) }}</small></div>
@@ -179,7 +179,7 @@ onMounted(reload)
   </section>
 
   <section class="section">
-    <div class="section-title"><div><h2>导入 DevSwitch 用户设置</h2><p>迁移全局选择与运行时清单；不移动安装目录，也不改写旧 state.json。</p></div></div>
+    <div class="section-title"><div><h2>导入 DevSwitch 用户设置</h2></div></div>
     <template v-if="inspection?.found">
       <div class="source-box"><span>来源</span><code>{{ inspection.sourcePath }}</code><a-tag>{{ inspection.valid ? `schema ${inspection.schema}` : '格式无效或不支持' }}</a-tag></div>
       <a-alert v-if="!inspection.valid" type="warning" show-icon message="当前来源不能导入，请保留旧状态文件并先处理格式问题。" />
@@ -204,7 +204,7 @@ onMounted(reload)
   </section>
 
   <section v-if="state?.legacyImports.length" class="section">
-    <div class="section-title"><div><h2>导入记录</h2><p>相同来源摘要会幂等处理，不覆盖后续的用户选择。</p></div></div>
+    <div class="section-title"><div><h2>导入记录</h2></div></div>
     <div v-for="record in state.legacyImports" :key="record.sourceDigest" class="repo-row"><div><strong>{{ new Date(record.importedAt).toLocaleString() }}</strong><small>新建 {{ record.created }} · 关联 {{ record.linked }} · 待处理 {{ record.unresolved }} · 冲突 {{ record.conflicts }}</small></div><a-tag>{{ record.sourceDigest.slice(0, 12) }}</a-tag></div>
   </section>
 </template>
