@@ -12,8 +12,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  cli:
-    name: CLI — ${{ matrix.os }}/${{ matrix.arch }}
+  cli-portable:
+    name: CLI 便携包 — ${{ matrix.os }}/${{ matrix.arch }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -35,10 +35,11 @@ jobs:
           ext='' ; if [ '${{ matrix.os }}' = windows ]; then ext='.exe'; fi
           CGO_ENABLED=0 GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} \
             go build -trimpath -o "dist/dev-toolbox${ext}" ./cmd/dev-toolbox
-      - name: 打包
+      - name: 打包（Windows 用 zip，Linux 用 tar.gz）
         shell: bash
         run: |
-          stage="dev-toolbox-${GITHUB_REF_NAME#v}-${{ matrix.os }}-${{ matrix.arch }}"
+          version="${GITHUB_REF_NAME#v}"
+          stage="dev-toolbox-${version}-${{ matrix.os }}-${{ matrix.arch }}"
           mkdir -p "pack/$stage"
           cp -r dist/. "pack/$stage/"
           cp LICENSE NOTICE README.md "pack/$stage/"
@@ -54,8 +55,40 @@ jobs:
             dev-toolbox-*.tar.gz
             dev-toolbox-*.zip
 
+  linux-packages:
+    name: Linux 包（deb / rpm）— ${{ matrix.arch }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [amd64, arm64]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: 安装打包工具
+        run: sudo apt-get update && sudo apt-get install -y rpm
+      - name: 交叉编译静态 CLI
+        shell: bash
+        run: |
+          mkdir -p dist
+          CGO_ENABLED=0 GOOS=linux GOARCH=${{ matrix.arch }} \
+            go build -trimpath -o dist/dev-toolbox ./cmd/dev-toolbox
+      - name: 构建 deb 与 rpm
+        shell: bash
+        run: |
+          chmod +x tools/packaging/build-linux-packages.sh
+          tools/packaging/build-linux-packages.sh "${GITHUB_REF_NAME#v}" ${{ matrix.arch }} dist/dev-toolbox
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-packages-${{ matrix.arch }}
+          path: |
+            dev-toolbox_*.deb
+            dev-toolbox-*.rpm
+
   gui-windows:
-    name: 桌面客户端 — windows/amd64
+    name: 桌面客户端（安装包 + 便携版）— windows/amd64
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -72,29 +105,41 @@ jobs:
         run: |
           npm ci --prefix frontend
           npm --prefix frontend run build:desktop
-      - name: CGO 编译 GUI
+      - name: 编译 GUI 与静态 CLI
         shell: pwsh
         run: |
           $env:Path = 'C:\msys64\mingw64\bin;' + $env:Path
           $env:CGO_ENABLED = '1'
           go build -tags gui -ldflags="-H windowsgui" -o dist/dev-toolbox-gui.exe ./cmd/dev-toolbox
-      - name: 打包
+          $env:CGO_ENABLED = '0'
+          go build -trimpath -o dist/dev-toolbox.exe ./cmd/dev-toolbox
+      - name: Inno Setup 安装包
+        shell: pwsh
+        run: |
+          $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { choco install innosetup -y --no-progress; $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" }
+          & $iscc /DAppVersion=$($env:GITHUB_REF_NAME -replace '^v', '') `
+            /DBinGui="$PWD\dist\dev-toolbox-gui.exe" `
+            /DBinCli="$PWD\dist\dev-toolbox.exe" `
+            tools\installer\dev-toolbox.iss
+      - name: 便携版 zip
         shell: pwsh
         run: |
           $version = $env:GITHUB_REF_NAME -replace '^v', ''
           $stage = "dev-toolbox-gui-$version-windows-amd64"
           New-Item -ItemType Directory -Force -Path "pack/$stage" | Out-Null
-          Copy-Item dist/dev-toolbox-gui.exe "pack/$stage/"
-          Copy-Item LICENSE, NOTICE, README.md "pack/$stage/"
+          Copy-Item dist/dev-toolbox-gui.exe, dist/dev-toolbox.exe, LICENSE, NOTICE, README.md "pack/$stage/"
           Compress-Archive -Path "pack/$stage" -DestinationPath "$stage.zip"
       - uses: actions/upload-artifact@v4
         with:
           name: gui-windows-amd64
-          path: dev-toolbox-gui-*.zip
+          path: |
+            dist/dev-toolbox-gui-*-windows-amd64-setup.exe
+            dev-toolbox-gui-*-windows-amd64.zip
 
   release:
     name: 发布 GitHub Release
-    needs: [cli, gui-windows]
+    needs: [cli-portable, linux-packages, gui-windows]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -106,7 +151,7 @@ jobs:
         shell: bash
         run: |
           cd release
-          sha256sum *.tar.gz *.zip > SHA256SUMS.txt
+          sha256sum *.tar.gz *.zip *.exe *.deb *.rpm > SHA256SUMS.txt
       - name: 创建 Release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -114,11 +159,11 @@ jobs:
         run: |
           notes="## DevToolbox ${GITHUB_REF_NAME}
 
-          首个开源版本。以项目为入口，管理\"这套项目用哪套运行时、哪个 Git 身份\"。
+          以项目为入口，管理\"这套项目用哪套运行时、哪个 Git 身份\"。
 
           ### 下载说明
-          - \`dev-toolbox-gui-*-windows-amd64.zip\`：Windows 桌面客户端（需 WebView2 Runtime），解压即用。
-          - \`dev-toolbox-*-linux-amd64.tar.gz\` / \`*-windows-*.zip\`：静态 CLI（无 CGO 依赖，交叉编译产物）。
+          - **Windows 桌面客户端**：\`dev-toolbox-gui-*-windows-amd64-setup.exe\`（用户级安装，无需管理员；不修改 PATH、不自动执行任何配置）。便携版用 \`dev-toolbox-gui-*-windows-amd64.zip\`（内含同名静态 CLI）。
+          - **Linux CLI 包**：Debian/Ubuntu 用 \`dev-toolbox_*_<架构>.deb\`，Fedora/RHEL/openSUSE 用 \`dev-toolbox-*-1.<架构>.rpm\`（依赖 git）；\`dev-toolbox-*-linux-*.tar.gz\` 为手动安装的便携包。
           - \`SHA256SUMS.txt\`：全部产物的 SHA-256 校验和。
           - Linux 桌面客户端暂未预构建（依赖 WebKitGTK，需自行构建，见 README）。
 
