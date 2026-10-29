@@ -164,14 +164,14 @@ onMounted(loadProjects)
     </a-layout-sider>
 
     <a-layout class="content-layout">
-      <a-layout-content class="page-content">
-        <div class="page-head">
+      <div class="page-head">
           <div><h1>{{ viewMeta.title }}</h1><div v-if="view === 'projects' && selected" class="page-sub">{{ selected.rootPath }}</div><div v-else-if="view === 'projects'" class="page-sub">扫描只读取项目清单，不运行脚本或 Wrapper。</div></div>
           <a-space v-if="view === 'projects' && selected">
             <a-button @click="rescan" :loading="busy">重新扫描</a-button>
             <a-button danger @click="removeProject">移除登记</a-button>
           </a-space>
         </div>
+        <a-layout-content class="page-content">
         <a-alert v-if="isDemoClient" type="info" show-icon message="本地演示客户端：使用虚构数据，扫描和登记不会访问磁盘或写入设置。" class="page-alert" />
         <a-alert v-if="errorText" type="error" show-icon closable :message="errorText" class="page-alert" />
 
