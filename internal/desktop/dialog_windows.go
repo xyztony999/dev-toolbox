@@ -10,6 +10,10 @@ import (
 	"syscall"
 )
 
+// powershellPath 是系统自带组件的固定位置（Windows PowerShell 5.1，
+// Windows 10/11 必有）；os.StartProcess 不做 PATH 搜索，必须给全路径。
+const powershellPath = `C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe`
+
 // pickFolderScript 是编译期常量：整段脚本不含任何外部输入，
 // 仅弹出 FolderBrowserDialog 并把所选路径写到标准输出。
 const pickFolderScript = `Add-Type -AssemblyName System.Windows.Forms; ` +
@@ -28,8 +32,8 @@ func pickFolderDialog() (string, error) {
 		Files: []*os.File{os.Stdin, outWriter, outWriter},
 		Sys:   &syscall.SysProcAttr{HideWindow: true, CreationFlags: 0x08000000},
 	}
-	proc, err := os.StartProcess("powershell",
-		[]string{"powershell", "-NoProfile", "-STA", "-Command", pickFolderScript}, attr)
+	proc, err := os.StartProcess(powershellPath,
+		[]string{powershellPath, "-NoProfile", "-STA", "-Command", pickFolderScript}, attr)
 	outWriter.Close()
 	if err != nil {
 		outReader.Close()
