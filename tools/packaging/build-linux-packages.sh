@@ -15,6 +15,8 @@ case "$deb_arch" in
 esac
 
 repo="$(cd "$(dirname "$0")/../.." && pwd)"
+repo="$(realpath "$repo")"
+bin="$(realpath "$bin")"
 stage="$(mktemp -d)"
 trap 'rm -rf "$stage"' EXIT
 
@@ -44,7 +46,6 @@ echo "built dev-toolbox_${version}_${deb_arch}.deb"
 rpm_stage="$stage-rpm"
 rm -rf "$rpm_stage"
 mkdir -p "$rpm_stage/SPECS" "$rpm_stage/BUILD" "$rpm_stage/RPMS" "$rpm_stage/SOURCES"
-cp -r "$stage/usr" "$rpm_stage/BUILD/"
 cat > "$rpm_stage/SPECS/dev-toolbox.spec" <<SPEC
 Name:           dev-toolbox
 Version:        $version
@@ -59,6 +60,13 @@ AutoReqProv:    no
 项目发现、运行时登记与下载安装、Git 身份/目录绑定/仓库审计。
 本包仅含 CLI；桌面客户端见 GitHub Releases。
 
+%install
+rm -rf "%{buildroot}"
+install -D -m 0755 "%{pkgbin}" "%{buildroot}/usr/bin/dev-toolbox"
+install -D -m 0644 "%{pkgrepo}/LICENSE" "%{buildroot}/usr/share/licenses/dev-toolbox/LICENSE"
+install -D -m 0644 "%{pkgrepo}/NOTICE" "%{buildroot}/usr/share/licenses/dev-toolbox/NOTICE"
+install -D -m 0644 "%{pkgrepo}/README.md" "%{buildroot}/usr/share/doc/dev-toolbox/README.md"
+
 %files
 /usr/bin/dev-toolbox
 /usr/share/licenses/dev-toolbox/LICENSE
@@ -66,7 +74,8 @@ AutoReqProv:    no
 /usr/share/doc/dev-toolbox/README.md
 SPEC
 rpmbuild -bb --define "_topdir $rpm_stage" --define "_rpmdir $(pwd)" \
-  --define "_builddir $rpm_stage/BUILD" --target "$rpm_arch" \
+  --define "_builddir $rpm_stage/BUILD" --define "_pkgbin $bin" --define "_pkgrepo $repo" \
+  --target "$rpm_arch" \
   "$rpm_stage/SPECS/dev-toolbox.spec"
 find "$(pwd)" -name "dev-toolbox-*.${rpm_arch}.rpm" -exec mv {} . \;
 echo "built dev-toolbox-$version-1.${rpm_arch}.rpm"
