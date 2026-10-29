@@ -1,0 +1,127 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  cli:
+    name: CLI — ${{ matrix.os }}/${{ matrix.arch }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: linux, arch: amd64 }
+          - { os: linux, arch: arm64 }
+          - { os: windows, arch: amd64 }
+          - { os: windows, arch: arm64 }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: 交叉编译静态 CLI
+        shell: bash
+        run: |
+          mkdir -p dist
+          ext='' ; if [ '${{ matrix.os }}' = windows ]; then ext='.exe'; fi
+          CGO_ENABLED=0 GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} \
+            go build -trimpath -o "dist/dev-toolbox${ext}" ./cmd/dev-toolbox
+      - name: 打包
+        shell: bash
+        run: |
+          stage="dev-toolbox-${GITHUB_REF_NAME#v}-${{ matrix.os }}-${{ matrix.arch }}"
+          mkdir -p "pack/$stage"
+          cp -r dist/. "pack/$stage/"
+          cp LICENSE NOTICE README.md "pack/$stage/"
+          if [ '${{ matrix.os }}' = windows ]; then
+            (cd pack && 7z a "../${stage}.zip" "$stage")
+          else
+            tar -czf "${stage}.tar.gz" -C pack "$stage"
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cli-${{ matrix.os }}-${{ matrix.arch }}
+          path: |
+            dev-toolbox-*.tar.gz
+            dev-toolbox-*.zip
+
+  gui-windows:
+    name: 桌面客户端 — windows/amd64
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: 生成内嵌前端
+        shell: pwsh
+        run: |
+          npm ci --prefix frontend
+          npm --prefix frontend run build:desktop
+      - name: CGO 编译 GUI
+        shell: pwsh
+        run: |
+          $env:Path = 'C:\msys64\mingw64\bin;' + $env:Path
+          $env:CGO_ENABLED = '1'
+          go build -tags gui -ldflags="-H windowsgui" -o dist/dev-toolbox-gui.exe ./cmd/dev-toolbox
+      - name: 打包
+        shell: pwsh
+        run: |
+          $stage = "dev-toolbox-gui-${env:GITHUB_REF_NAME -replace '^v',''}-windows-amd64"
+          New-Item -ItemType Directory -Force -Path "pack/$stage" | Out-Null
+          Copy-Item dist/dev-toolbox-gui.exe "pack/$stage/"
+          Copy-Item LICENSE, NOTICE, README.md "pack/$stage/"
+          Compress-Archive -Path "pack/$stage" -DestinationPath "$stage.zip"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gui-windows-amd64
+          path: dev-toolbox-gui-*.zip
+
+  release:
+    name: 发布 GitHub Release
+    needs: [cli, gui-windows]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+          path: release
+      - name: 生成 SHA256SUMS
+        shell: bash
+        run: |
+          cd release
+          sha256sum *.tar.gz *.zip > SHA256SUMS.txt
+      - name: 创建 Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          notes="## DevToolbox ${GITHUB_REF_NAME}
+
+          首个开源版本。以项目为入口，管理\"这套项目用哪套运行时、哪个 Git 身份\"。
+
+          ### 下载说明
+          - \`dev-toolbox-gui-*-windows-amd64.zip\`：Windows 桌面客户端（需 WebView2 Runtime），解压即用。
+          - \`dev-toolbox-*-linux-amd64.tar.gz\` / \`*-windows-*.zip\`：静态 CLI（无 CGO 依赖，交叉编译产物）。
+          - \`SHA256SUMS.txt\`：全部产物的 SHA-256 校验和。
+          - Linux 桌面客户端暂未预构建（依赖 WebKitGTK，需自行构建，见 README）。
+
+          完整变更见下方 commits；设计与验证报告见仓库 profiles/dev-toolbox/workspace/。"
+          gh release create "$GITHUB_REF_NAME" release/* \
+            --title "DevToolbox ${GITHUB_REF_NAME}" \
+            --notes "$notes"

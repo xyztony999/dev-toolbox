@@ -33,6 +33,10 @@
 - Go WebView2 宿主 + 内嵌单文件前端；桥接只开放白名单操作，异步执行不冻结窗口。
 - 深浅主题跟随系统；应用图标与品牌同源。
 
+## 下载
+
+预构建产物见 [Releases](https://github.com/xyztony999/dev-toolbox/releases)：Windows 桌面客户端与四平台静态 CLI（附 SHA256SUMS 校验和）。Linux 桌面客户端暂需自行构建。
+
 ## 构建
 
 要求：Go ≥ 1.24、Node（仅前端构建）、Windows 下另需 MinGW-w64（CGO）与 WebView2 Runtime。
