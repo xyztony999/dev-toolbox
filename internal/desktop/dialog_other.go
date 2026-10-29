@@ -51,7 +51,7 @@ func pickFolderDialog() (string, error) {
 		_, _ = io.Copy(&buf, outReader)
 		close(done)
 	}()
-	waitErr := proc.Wait()
+	_, waitErr := proc.Wait()
 	<-done
 	outReader.Close()
 	if waitErr != nil {
