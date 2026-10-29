@@ -38,8 +38,9 @@
 预构建产物见 [Releases](https://github.com/xyztony999/dev-toolbox/releases)：
 
 - **Windows 桌面客户端**：Inno Setup 安装包（用户级安装、无需管理员、不改 PATH、不自动执行配置）或便携版 zip。
+- **Linux 桌面客户端**（amd64）：tar.gz 便携包与 deb 包，运行依赖系统 `libwebkit2gtk-4.1`（Ubuntu 24.04+/新版 Fedora 原生提供）。
 - **Linux CLI 包**：Debian/Ubuntu 的 deb 与 Fedora/RHEL/openSUSE 的 rpm（依赖 git），另有手动安装的 tar.gz/zip。
-- 全部产物附 SHA256SUMS 校验和。Linux 桌面客户端暂需自行构建（依赖 WebKitGTK）。
+- 全部产物附 SHA256SUMS 校验和。
 
 ## 构建
 

@@ -139,9 +139,41 @@ jobs:
             dev-toolbox-gui-*-windows-amd64-setup.exe
             dev-toolbox-gui-*-windows-amd64.zip
 
+  gui-linux:
+    name: 桌面客户端 — linux/amd64
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: 安装 GTK/WebKitGTK 依赖
+        run: sudo apt-get update && sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev
+      - name: 编译 Linux GUI
+        run: |
+          mkdir -p dist
+          CGO_ENABLED=1 go build -tags gui -trimpath -o dist/dev-toolbox-gui ./cmd/dev-toolbox
+      - name: 打包 tar.gz 与 deb
+        shell: bash
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          stage="dev-toolbox-gui-$version-linux-amd64"
+          mkdir -p "pack/$stage"
+          cp dist/dev-toolbox-gui "pack/$stage/"
+          cp LICENSE NOTICE README.md "pack/$stage/"
+          tar -czf "$stage.tar.gz" -C pack "$stage"
+          chmod +x tools/packaging/build-linux-packages.sh
+          tools/packaging/build-linux-packages.sh "$version" amd64 dist/dev-toolbox-gui gui
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gui-linux-amd64
+          path: |
+            dev-toolbox-gui-*-linux-amd64.tar.gz
+            dev-toolbox-gui_*_amd64.deb
+
   release:
     name: 发布 GitHub Release
-    needs: [cli-portable, linux-packages, gui-windows]
+    needs: [cli-portable, linux-packages, gui-windows, gui-linux]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

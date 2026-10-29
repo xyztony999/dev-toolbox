@@ -16,5 +16,10 @@ projects by the same author, both licensed under the MIT License:
   registration, user-level runtime state, and the download provider
   behaviors (Node, Java, Maven, Gradle, Android SDK, Go, Python).
 
+The webview_go binding is bundled under third_party/webview_go (MIT, same
+copyright holders as above) with a local build patch: the Linux dependency
+was moved from webkit2gtk-4.0 to webkit2gtk-4.1 so modern distributions can
+build it. Upstream master had not switched at bundling time.
+
 Third-party runtime dependencies remain under their own licenses:
-github.com/webview/webview_go (MIT), github.com/ulikunitz/xz (BSD-3-Clause).
+github.com/ulikunitz/xz (BSD-3-Clause); webview_go is vendored in-tree (MIT).
