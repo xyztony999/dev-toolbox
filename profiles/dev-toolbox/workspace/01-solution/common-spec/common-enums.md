@@ -68,3 +68,13 @@ Git 身份枚举（D3 git-identity-migration v1.0）：
 | RuntimeCandidateSource | uv | uv 自管解释器 |
 | ProjectBuildSystem | cargo | Cargo |
 | ProjectBuildSystem | rust | rust-toolchain 钉子 |
+
+会话启动器枚举（D3 session-launcher v1.0）：
+
+| enum | code | label |
+|---|---|---|
+| SessionToolStatus | injected | 注入 |
+| SessionToolStatus | skipped | 未注入 |
+| TerminalId | powershell | PowerShell |
+| TerminalId | cmd | 命令提示符 |
+| TerminalId | bash | Bash（Windows 为 Git Bash） |

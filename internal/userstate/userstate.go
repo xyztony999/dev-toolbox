@@ -25,6 +25,9 @@ var (
 
 var toolNames = []string{"node", "java", "maven", "gradle", "androidsdk", "golang", "python", "rust"}
 
+// ToolNames 导出工具顺序（session 等只读消费方使用）。
+func ToolNames() []string { return toolNames }
+
 type Selection struct {
 	InstallationID string `json:"installationId,omitempty"`
 	UnresolvedHome string `json:"unresolvedHome,omitempty"`

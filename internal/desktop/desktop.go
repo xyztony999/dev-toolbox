@@ -8,14 +8,18 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
+	"time"
 
 	"dev-toolbox/internal/gitidentity"
 	"dev-toolbox/internal/project"
 	"dev-toolbox/internal/runtimecatalog"
 	"dev-toolbox/internal/runtimeinstall"
+	"dev-toolbox/internal/session"
 	"dev-toolbox/internal/userstate"
 	webview "github.com/webview/webview_go"
 )
@@ -77,7 +81,28 @@ func Run() {
 	if err := w.Bind("__devToolboxCancel", func(string) {}); err != nil {
 		panic(err)
 	}
-	w.Init(`window.devToolbox={invoke:async r=>window.__devToolboxInvoke(JSON.stringify(r)),cancel:id=>window.__devToolboxCancel(id)};`)
+	// 前端错误通道：页面运行时异常写入 dist 同级 frontend-error.log
+	// （windowsgui 子系统无 stderr，重定向捕获不到）。
+	errorLog, err := os.OpenFile(filepath.Join(filepath.Dir(os.Args[0]), "frontend-error.log"), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o600)
+	if err == nil {
+		defer errorLog.Close()
+	}
+	if err := w.Bind("__devToolboxReportError", func(message, source string, line, col int) {
+		if errorLog != nil {
+			_, _ = fmt.Fprintf(errorLog, "[frontend-error] %s (%s:%d:%d)\n", message, source, line, col)
+		}
+	}); err != nil {
+		panic(err)
+	}
+	// 心跳：Init 脚本一执行即上报（判断 SetHtml 内容是否真的运行）。
+	if err := w.Bind("__devToolboxHeartbeat", func(stage string) {
+		if errorLog != nil {
+			_, _ = fmt.Fprintf(errorLog, "[heartbeat] %s %s\n", stage, time.Now().Format(time.RFC3339))
+		}
+	}); err != nil {
+		panic(err)
+	}
+	w.Init(`window.__devToolboxHeartbeat('init');window.devToolbox={invoke:async r=>window.__devToolboxInvoke(JSON.stringify(r)),cancel:id=>window.__devToolboxCancel(id)};window.onerror=function(m,s,l,c){try{window.__devToolboxReportError(String(m),String(s),l||0,c||0)}catch(e){}};window.addEventListener('unhandledrejection',function(e){try{window.__devToolboxReportError('unhandledrejection: '+String(e.reason),'',0,0)}catch(_){}});`)
 	// Host-push install events: the manager sink marshals on its own
 	// goroutine and Eval happens on the UI thread via Dispatch.
 	runtimeinstall.Default.SetSink(func(evt runtimeinstall.Event) {
@@ -89,8 +114,33 @@ func Run() {
 			w.Eval("window.__devToolboxEvent && window.__devToolboxEvent(" + string(payload) + ")")
 		})
 	})
-	w.SetHtml(ui)
+	// WebView2 NavigateToString 存在约 1.5MB 的隐性上限：超过时静默
+	// 留在 about:blank（本机实测 1,574,138 字节失败、1,566,363 通过）。
+	// 超限时回退为写临时文件并 file:// 导航——单文件内嵌包无外部依赖。
+	if len(ui) < 1_500_000 {
+		w.SetHtml(ui)
+	} else if err := navigateEmbeddedFile(w); err != nil {
+		panic("load embedded ui failed: " + err.Error())
+	}
 	w.Run()
+}
+
+// navigateEmbeddedFile 把内嵌单文件前端写到用户临时目录并导航。
+func navigateEmbeddedFile(w webview.WebView) error {
+	base, err := os.UserCacheDir()
+	if err != nil {
+		return err
+	}
+	dir := filepath.Join(base, "DevToolbox", "ui")
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		return err
+	}
+	path := filepath.Join(dir, "index.html")
+	if err := os.WriteFile(path, []byte(ui), 0o600); err != nil {
+		return err
+	}
+	w.Navigate("file:///" + filepath.ToSlash(path))
+	return nil
 }
 
 var errCancelled = errors.New("FOLDER_PICK_CANCELLED")
@@ -646,6 +696,30 @@ func invoke(req request) response {
 		}
 		if err = decode(req.Payload, &p); err == nil {
 			data, err = gitidentity.LegacyImport(ctx, gitStore(), p.SourceDigest, p.ProfileIDs, p.ConfirmBackup, p.ConfirmImport)
+		}
+	case "session.preview":
+		var p struct {
+			Path string `json:"path"`
+		}
+		if err = decode(req.Payload, &p); err == nil {
+			var preview *session.Preview
+			preview, err = session.ResolveContext(ctx, p.Path)
+			data = preview
+		}
+	case "session.open":
+		var p struct {
+			Path     string `json:"path"`
+			Terminal string `json:"terminalId"`
+			Confirm  bool   `json:"confirm"`
+		}
+		if err = decode(req.Payload, &p); err == nil {
+			if !p.Confirm {
+				err = errors.New("CONFIRMATION_REQUIRED")
+			} else {
+				var result *session.OpenResult
+				result, err = session.Open(ctx, p.Path, p.Terminal)
+				data = result
+			}
 		}
 	case "app.pickFolder":
 		data, err = pickFolderDialog()

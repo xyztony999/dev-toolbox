@@ -19,8 +19,11 @@ func run(ctx context.Context, args []string) int {
 	if len(args) > 0 && args[0] == "git" {
 		return runGitIdentity(ctx, args[1:])
 	}
+	if len(args) > 0 && args[0] == "session" {
+		return runSession(ctx, args[1:])
+	}
 	if len(args) == 0 || args[0] != "project" {
-		fmt.Fprintln(os.Stderr, "usage: dev-toolbox <project|runtime|git> ...")
+		fmt.Fprintln(os.Stderr, "usage: dev-toolbox <project|runtime|git|session> ...")
 		return 2
 	}
 	if len(args) < 2 {

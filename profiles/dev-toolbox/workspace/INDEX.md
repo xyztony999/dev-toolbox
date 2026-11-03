@@ -103,6 +103,19 @@ modules:
     gates:
       gate1: {status: pass, note: 2026-11-03 git-remote-management D0-D4 PASS；详见 gate1-git-remote-management-2026-11-03.md}
       gate2: {status: pass, note: 2026-11-03 GR-01..06 + 真机 CLI/GUI 全过；详见 gate2-git-remote-management-2026-11-03.md}
+  - name: session-launcher
+    title: 会话启动器——上下文终端
+    domain: platform
+    stages:
+      requirement: {status: complete, note: D0 完成边界：注入仅子进程/终端枚举/Git 身份只预览；WT 与任意命令不纳入}
+      api: {status: complete, note: D3 session.preview/open 契约 v1.0（SessionToolState/TerminalId 枚举、环境组装规范）}
+      interaction: {status: complete, note: D4 项目详情终端面板 + 仓库快捷入口 v1.0}
+      backend: {status: complete, note: internal/session（求值/组装/终端目录/conhost 启动）+ CLI + 桥接；4 测试含 env 继承实证}
+      frontend: {status: complete, note: SessionManager 抽屉（预览/cwd/终端选择/启动确认）；真机 GUI 全链路截图验证}
+      validation: {status: complete, note: Gate 2 PASS——含 NavigateToString 1.5MB 上限发现与 file:// 回退修复}
+    gates:
+      gate1: {status: pass, note: 2026-11-03 session-launcher D0-D4 PASS；详见 gate1-session-launcher-2026-11-03.md}
+      gate2: {status: pass, note: 2026-11-04 自动化+Windows 真机 CLI/GUI 全过；详见 gate2-session-launcher-2026-11-04.md}
   - name: desktop-shell
     title: Go WebView 与 Vue/AntD 桌面宿主
     domain: desktop

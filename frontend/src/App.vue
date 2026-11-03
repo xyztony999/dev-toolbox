@@ -6,6 +6,7 @@ import type { Candidate, Project, RuntimeRequirement } from './types'
 import RuntimeSettings from './RuntimeSettings.vue'
 import GitIdentity from './GitIdentity.vue'
 import RemoteManager from './RemoteManager.vue'
+import SessionManager from './SessionManager.vue'
 
 const prefersDark = window.matchMedia('(prefers-color-scheme: dark)')
 const isDark = ref(prefersDark.matches)
@@ -25,6 +26,12 @@ const displayName = ref('')
 const busy = ref(false)
 const picking = ref(false)
 const remoteManager = ref<{ open: boolean; path: string; name: string }>({ open: false, path: '', name: '' })
+const sessionOpen = ref(false)
+const sessionRepoPaths = computed(() => {
+  const paths = [selected.value?.rootPath ?? '', ...(selected.value?.repositories.map((repo) => repo.path) ?? [])]
+  return paths.filter(Boolean)
+})
+const sessionDefaultPath = computed(() => selected.value?.rootPath ?? '.')
 const errorText = ref('')
 const selected = computed(() => projects.value.find((item) => item.id === activeId.value))
 const view = ref<'projects' | 'runtime' | 'git'>('projects')
@@ -181,6 +188,7 @@ onMounted(loadProjects)
       <div class="page-head">
           <div><h1>{{ viewMeta.title }}</h1><div v-if="view === 'projects' && selected" class="page-sub">{{ selected.rootPath }}</div></div>
           <a-space v-if="view === 'projects' && selected">
+            <a-button type="primary" @click="sessionOpen = true">在此打开终端</a-button>
             <a-button @click="rescan" :loading="busy">重新扫描</a-button>
             <a-button danger @click="removeProject">移除登记</a-button>
           </a-space>
@@ -244,6 +252,7 @@ onMounted(loadProjects)
                 <small v-else-if="repo.remoteUrl">remote {{ repo.remoteName }}，{{ repo.remoteUrl }}</small>
               </div>
               <a-space>
+                <a-button size="small" @click="sessionOpen = true">终端</a-button>
                 <a-button size="small" @click="remoteManager = { open: true, path: repo.path, name: repo.path.split(/[\/]/).filter(Boolean).at(-1) || repo.kind }">管理 Remote</a-button>
                 <a-tag>{{ repo.kind }}</a-tag>
               </a-space>
@@ -270,6 +279,7 @@ onMounted(loadProjects)
           </section>
         </template>
         <RemoteManager v-model:open="remoteManager.open" :repo-path="remoteManager.path" :repo-name="remoteManager.name" />
+        <SessionManager v-model:open="sessionOpen" :repo-paths="sessionRepoPaths" :default-path="sessionDefaultPath" />
       </a-layout-content>
     </a-layout>
   </a-layout>
