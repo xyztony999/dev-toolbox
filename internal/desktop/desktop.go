@@ -474,6 +474,68 @@ func invoke(req request) response {
 		}
 	case "git.gitDoctor":
 		data, err = gitidentity.GitDoctor(ctx, gitStore())
+	case "git.remoteList":
+		var p struct {
+			Repo string `json:"repo"`
+		}
+		if err = decode(req.Payload, &p); err == nil {
+			data, err = gitidentity.RemoteList(ctx, p.Repo)
+		}
+	case "git.remoteAdd":
+		var p struct {
+			Repo    string `json:"repo"`
+			Name    string `json:"name"`
+			URL     string `json:"url"`
+			Confirm bool   `json:"confirm"`
+		}
+		if err = decode(req.Payload, &p); err == nil {
+			if !p.Confirm {
+				err = errors.New("CONFIRMATION_REQUIRED")
+			} else {
+				data, err = gitidentity.RemoteAdd(ctx, p.Repo, p.Name, p.URL)
+			}
+		}
+	case "git.remoteRemove":
+		var p struct {
+			Repo    string `json:"repo"`
+			Name    string `json:"name"`
+			Confirm bool   `json:"confirm"`
+		}
+		if err = decode(req.Payload, &p); err == nil {
+			if !p.Confirm {
+				err = errors.New("CONFIRMATION_REQUIRED")
+			} else {
+				data, err = gitidentity.RemoteRemove(ctx, p.Repo, p.Name)
+			}
+		}
+	case "git.remoteRename":
+		var p struct {
+			Repo    string `json:"repo"`
+			From    string `json:"from"`
+			To      string `json:"to"`
+			Confirm bool   `json:"confirm"`
+		}
+		if err = decode(req.Payload, &p); err == nil {
+			if !p.Confirm {
+				err = errors.New("CONFIRMATION_REQUIRED")
+			} else {
+				data, err = gitidentity.RemoteRename(ctx, p.Repo, p.From, p.To)
+			}
+		}
+	case "git.remoteSetUrl":
+		var p struct {
+			Repo    string `json:"repo"`
+			Name    string `json:"name"`
+			URL     string `json:"url"`
+			Confirm bool   `json:"confirm"`
+		}
+		if err = decode(req.Payload, &p); err == nil {
+			if !p.Confirm {
+				err = errors.New("CONFIRMATION_REQUIRED")
+			} else {
+				data, err = gitidentity.RemoteSetUrl(ctx, p.Repo, p.Name, p.URL)
+			}
+		}
 	case "git.mirrorList":
 		var p struct {
 			Repo string `json:"repo"`

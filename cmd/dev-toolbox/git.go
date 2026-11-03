@@ -335,30 +335,70 @@ func gitRemote(ctx context.Context, args []string) int {
 		if len(args) > 1 {
 			repo = args[1]
 		}
-		return output(gitidentity.MirrorList(ctx, repo))
+		remotes, err := gitidentity.RemoteList(ctx, repo)
+		if err != nil {
+			return report(err)
+		}
+		return output(remotes)
 	}
 	remoteName := flagValue(args, "--remote")
 	switch args[0] {
-	case "mirror":
-		if len(args) < 2 || !hasFlag(args, "--confirm") {
-			return usage("git remote mirror <url> [--remote name] --confirm")
+	case "add":
+		if len(args) < 4 || !hasFlag(args, "--confirm") {
+			return usage("git remote add <repo> <name> <url> --confirm")
 		}
-		urls, err := gitidentity.MirrorSet(ctx, ".", remoteName, args[1])
+		remotes, err := gitidentity.RemoteAdd(ctx, args[1], args[2], args[3])
+		if err != nil {
+			return report(err)
+		}
+		return output(remotes)
+	case "remove":
+		if len(args) < 3 || !hasFlag(args, "--confirm") {
+			return usage("git remote remove <repo> <name> --confirm")
+		}
+		remotes, err := gitidentity.RemoteRemove(ctx, args[1], args[2])
+		if err != nil {
+			return report(err)
+		}
+		return output(remotes)
+	case "rename":
+		if len(args) < 4 || !hasFlag(args, "--confirm") {
+			return usage("git remote rename <repo> <from> <to> --confirm")
+		}
+		remotes, err := gitidentity.RemoteRename(ctx, args[1], args[2], args[3])
+		if err != nil {
+			return report(err)
+		}
+		return output(remotes)
+	case "set-url":
+		if len(args) < 4 || !hasFlag(args, "--confirm") {
+			return usage("git remote set-url <repo> <name> <url> --confirm")
+		}
+		remotes, err := gitidentity.RemoteSetUrl(ctx, args[1], args[2], args[3])
+		if err != nil {
+			return report(err)
+		}
+		return output(remotes)
+	case "mirror":
+		if len(args) < 3 || !hasFlag(args, "--confirm") {
+			return usage("git remote mirror <repo> <url> [--remote name] --confirm")
+		}
+		urls, err := gitidentity.MirrorSet(ctx, args[1], remoteName, args[2])
 		if err != nil {
 			return report(err)
 		}
 		return output(map[string]any{"remote": remoteName, "pushUrls": urls})
 	case "unmirror":
-		if !hasFlag(args, "--confirm") {
-			return usage("git remote unmirror [--remote name] --confirm")
+		if len(args) < 2 || !hasFlag(args, "--confirm") {
+			return usage("git remote unmirror <repo> [--remote name] --confirm")
 		}
-		removed, err := gitidentity.MirrorUnset(ctx, ".", remoteName)
+		removed, err := gitidentity.MirrorUnset(ctx, args[1], remoteName)
 		if err != nil {
 			return report(err)
 		}
 		return output(map[string]any{"remote": remoteName, "removed": removed})
 	default:
-		return usage("git remote <list|mirror <url>|unmirror> [--remote name] --confirm")
+		return usage("git remote <list [repo]|add|remove|rename|set-url|mirror|unmirror> [args] --confirm")
 	}
 }
 

@@ -410,6 +410,16 @@ export async function mockInvoke(operation: string, payload: Record<string, unkn
         orphanSnippets: [],
         hookPresent: true,
       }
+    case 'git.remoteList':
+      return [{ name: 'origin', url: 'https://github.com/demo/demo.git', pushUrls: [], mirror: false, account: 'corp-zhang' }]
+    case 'git.remoteAdd':
+      if (!payload.confirm) throw new Error('CONFIRMATION_REQUIRED')
+      return [{ name: 'origin', url: 'https://github.com/demo/demo.git', pushUrls: [], mirror: false }, { name: payload.name, url: payload.url, pushUrls: [], mirror: false }]
+    case 'git.remoteRemove':
+    case 'git.remoteRename':
+    case 'git.remoteSetUrl':
+      if (!payload.confirm) throw new Error('CONFIRMATION_REQUIRED')
+      return [{ name: payload.to ?? payload.name ?? 'origin', url: payload.url ?? 'https://github.com/demo/demo.git', pushUrls: [], mirror: false }]
     case 'git.mirrorList':
       return [{ name: 'origin', url: 'https://github.com/demo/demo.git', pushUrls: [], mirror: false }]
     case 'git.mirrorSet':

@@ -5,6 +5,7 @@ import { invoke, isDemoClient } from './bridge'
 import type { Candidate, Project, RuntimeRequirement } from './types'
 import RuntimeSettings from './RuntimeSettings.vue'
 import GitIdentity from './GitIdentity.vue'
+import RemotePanel from './RemotePanel.vue'
 
 const prefersDark = window.matchMedia('(prefers-color-scheme: dark)')
 const isDark = ref(prefersDark.matches)
@@ -23,6 +24,7 @@ const rootPath = ref('')
 const displayName = ref('')
 const busy = ref(false)
 const picking = ref(false)
+const remoteRepoId = ref('')
 const errorText = ref('')
 const selected = computed(() => projects.value.find((item) => item.id === activeId.value))
 const view = ref<'projects' | 'runtime' | 'git'>('projects')
@@ -234,14 +236,18 @@ onMounted(loadProjects)
           <section class="section">
             <div class="section-title"><div><h2>仓库</h2></div></div>
             <a-empty v-if="selected.repositories.length === 0" description="未发现 Git 工作树" />
-            <div v-for="repo in selected.repositories" :key="repo.id" class="repo-row">
+            <div v-for="repo in selected.repositories" :key="repo.id" class="repo-row repo-card">
               <div>
                 <strong>{{ repo.path }}</strong>
                 <small>{{ repo.source }}</small>
                 <small v-if="repo.branch">分支 {{ repo.branch }}<template v-if="repo.remoteName">，remote {{ repo.remoteName }}</template><template v-if="repo.userName">，{{ repo.userName }}<template v-if="repo.userEmail"> &lt;{{ repo.userEmail }}&gt;</template></template>（项目级）</small>
                 <small v-else-if="repo.remoteUrl">remote {{ repo.remoteName }}，{{ repo.remoteUrl }}</small>
               </div>
-              <a-tag>{{ repo.kind }}</a-tag>
+              <a-space>
+                <a-button size="small" @click="remoteRepoId = remoteRepoId === repo.id ? '' : repo.id">Remote</a-button>
+                <a-tag>{{ repo.kind }}</a-tag>
+              </a-space>
+              <RemotePanel v-if="remoteRepoId === repo.id" :repo-path="repo.path" />
             </div>
           </section>
           <section class="section">

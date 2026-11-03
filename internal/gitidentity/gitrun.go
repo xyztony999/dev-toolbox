@@ -23,6 +23,7 @@ const gitBinary = "git"
 
 var allowedGitSubcommands = map[string]bool{
 	"config": true, "rev-parse": true, "log": true, "credential": true,
+	"remote":    true,
 	"--version": true,
 }
 

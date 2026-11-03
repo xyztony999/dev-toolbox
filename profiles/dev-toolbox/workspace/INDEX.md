@@ -90,6 +90,19 @@ modules:
     gates:
       gate1: {status: pass, note: 2026-11-03 toolchain-import D0-D4 PASS；uv/rustup 目录布局须实现期真机验证（TH-10）；详见 gate1-toolchain-import-2026-11-03.md}
       gate2: {status: warn, note: 2026-11-03 自动化+Windows 真机全过；Linux 探测路径待真机验证；顺手修 golang/java 版本解析；详见 gate2-toolchain-import-2026-11-03.md}
+  - name: git-remote-management
+    title: 仓库 Git Remote 全生命周期管理
+    domain: git
+    stages:
+      requirement: {status: complete, note: D0 完成 remote 增删/改名/改地址能力边界与注入防御规则；镜像推送沿用既有}
+      api: {status: complete, note: D3 五新操作（list/add/remove/rename/setUrl，写操作返回快照）+ 镜像沿用}
+      interaction: {status: complete, note: D4 项目详情仓库卡片就地管理面板（主入口）+ Git 身份页次入口}
+      backend: {status: complete, note: remote.go 全生命周期（校验/注入防御/git remote 子命令/快照返回）+ 白名单加 remote；注入防御沙箱测试通过}
+      frontend: {status: complete, note: RemotePanel 组件接入项目详情仓库卡片（主入口）；Git 身份页镜像区块沿用；演示桥覆盖新操作}
+      validation: {status: complete, note: Gate 2 PASS——真机 CLI 全生命周期 + GUI 面板截图复核，无待确认项}
+    gates:
+      gate1: {status: pass, note: 2026-11-03 git-remote-management D0-D4 PASS；详见 gate1-git-remote-management-2026-11-03.md}
+      gate2: {status: pass, note: 2026-11-03 GR-01..06 + 真机 CLI/GUI 全过；详见 gate2-git-remote-management-2026-11-03.md}
   - name: desktop-shell
     title: Go WebView 与 Vue/AntD 桌面宿主
     domain: desktop
