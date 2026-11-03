@@ -5,7 +5,7 @@ import { invoke, isDemoClient } from './bridge'
 import type { Candidate, Project, RuntimeRequirement } from './types'
 import RuntimeSettings from './RuntimeSettings.vue'
 import GitIdentity from './GitIdentity.vue'
-import RemotePanel from './RemotePanel.vue'
+import RemoteManager from './RemoteManager.vue'
 
 const prefersDark = window.matchMedia('(prefers-color-scheme: dark)')
 const isDark = ref(prefersDark.matches)
@@ -24,7 +24,7 @@ const rootPath = ref('')
 const displayName = ref('')
 const busy = ref(false)
 const picking = ref(false)
-const remoteRepoId = ref('')
+const remoteManager = ref<{ open: boolean; path: string; name: string }>({ open: false, path: '', name: '' })
 const errorText = ref('')
 const selected = computed(() => projects.value.find((item) => item.id === activeId.value))
 const view = ref<'projects' | 'runtime' | 'git'>('projects')
@@ -244,10 +244,9 @@ onMounted(loadProjects)
                 <small v-else-if="repo.remoteUrl">remote {{ repo.remoteName }}，{{ repo.remoteUrl }}</small>
               </div>
               <a-space>
-                <a-button size="small" @click="remoteRepoId = remoteRepoId === repo.id ? '' : repo.id">Remote</a-button>
+                <a-button size="small" @click="remoteManager = { open: true, path: repo.path, name: repo.path.split(/[\/]/).filter(Boolean).at(-1) || repo.kind }">管理 Remote</a-button>
                 <a-tag>{{ repo.kind }}</a-tag>
               </a-space>
-              <RemotePanel v-if="remoteRepoId === repo.id" :repo-path="repo.path" />
             </div>
           </section>
           <section class="section">
@@ -270,6 +269,7 @@ onMounted(loadProjects)
             <a-alert v-for="issue in selected.issues" :key="`${issue.code}-${issue.relativePath}`" :message="issue.message" :description="issue.relativePath" type="warning" show-icon class="issue-alert" />
           </section>
         </template>
+        <RemoteManager v-model:open="remoteManager.open" :repo-path="remoteManager.path" :repo-name="remoteManager.name" />
       </a-layout-content>
     </a-layout>
   </a-layout>
