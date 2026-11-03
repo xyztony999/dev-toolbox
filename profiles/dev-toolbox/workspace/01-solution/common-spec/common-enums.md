@@ -58,3 +58,13 @@ Git 身份枚举（D3 git-identity-migration v1.0）：
 | GitDoctorLevel | info | 提示 |
 | GitDoctorLevel | warn | 警告 |
 | GitDoctorLevel | error | 错误 |
+
+工具链导入枚举（D3 toolchain-import v1.0）：
+
+| enum | code | label |
+|---|---|---|
+| RuntimeTool | rust | Rust 工具链 |
+| RuntimeCandidateSource | rustup | rustup 管理 |
+| RuntimeCandidateSource | uv | uv 自管解释器 |
+| ProjectBuildSystem | cargo | Cargo |
+| ProjectBuildSystem | rust | rust-toolchain 钉子 |

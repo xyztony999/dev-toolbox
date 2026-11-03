@@ -35,6 +35,23 @@ type moduleFiles struct {
 	files map[string]string
 }
 
+var (
+	cargoRustVersion     = regexp.MustCompile(`(?m)^\s*rust-version\s*=\s*"([^"]+)"`)
+	rustToolchainChannel = regexp.MustCompile(`(?m)^\s*channel\s*=\s*"([^"]+)"`)
+)
+
+// bareRustChannel 解析无扩展名 rust-toolchain 文件：首个非注释非空行即通道名。
+func bareRustChannel(raw string) string {
+	for _, line := range strings.Split(raw, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" || strings.HasPrefix(trimmed, "#") {
+			continue
+		}
+		return trimmed
+	}
+	return ""
+}
+
 func scan(ctx context.Context, root string) (Candidate, error) {
 	root = strings.TrimSpace(root)
 	if root == "" {
@@ -192,6 +209,10 @@ func makeModule(files *moduleFiles) Module {
 			if _, ok := files.files["gradlew"]; ok {
 				builds["gradle-wrapper"] = true
 			}
+		case "cargo.toml":
+			builds["cargo"] = true
+		case "rust-toolchain", "rust-toolchain.toml":
+			builds["rust"] = true
 		}
 	}
 	var requirements []RuntimeRequirement
@@ -228,6 +249,18 @@ func makeModule(files *moduleFiles) Module {
 			}
 			for _, v := range findAndroidSDKVersions(raw) {
 				requirements = append(requirements, requirement("androidsdk", v.value, files.path, name, v.locator, "medium", "gradle-android"))
+			}
+		case "cargo.toml":
+			if m := cargoRustVersion.FindStringSubmatch(raw); len(m) == 2 {
+				requirements = append(requirements, requirement("rust", m[1], files.path, name, "package.rust-version", "high", "cargo"))
+			}
+		case "rust-toolchain":
+			if v := bareRustChannel(raw); v != "" {
+				requirements = append(requirements, requirement("rust", v, files.path, name, "toolchain.channel", "high", "rust-toolchain"))
+			}
+		case "rust-toolchain.toml":
+			if m := rustToolchainChannel.FindStringSubmatch(raw); len(m) == 2 {
+				requirements = append(requirements, requirement("rust", m[1], files.path, name, "toolchain.channel", "high", "rust-toolchain"))
 			}
 		}
 	}
@@ -266,6 +299,8 @@ func makeModule(files *moduleFiles) Module {
 			runtime = "java"
 		case "android-gradle":
 			runtime = "androidsdk"
+		case "cargo", "rust":
+			runtime = "rust"
 		}
 		if runtime != "" && !seenRuntime[runtime] {
 			requirements = append(requirements, RuntimeRequirement{Runtime: runtime, Confidence: "low", Status: RequirementUnknown})
@@ -341,7 +376,7 @@ func digestCandidate(c Candidate) string {
 
 func isManifest(name string) bool {
 	switch strings.ToLower(name) {
-	case "package.json", ".nvmrc", "pyproject.toml", "requirements.txt", "setup.py", "setup.cfg", "go.mod", "pom.xml", "mvnw", "build.gradle", "build.gradle.kts", "settings.gradle", "settings.gradle.kts", "gradlew":
+	case "package.json", ".nvmrc", "pyproject.toml", "requirements.txt", "setup.py", "setup.cfg", "go.mod", "pom.xml", "mvnw", "build.gradle", "build.gradle.kts", "settings.gradle", "settings.gradle.kts", "gradlew", "cargo.toml", "rust-toolchain", "rust-toolchain.toml":
 		return true
 	default:
 		return false

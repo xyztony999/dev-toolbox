@@ -47,6 +47,7 @@ const userRuntimeState = {
     androidsdk: { status: 'empty', source: '' },
     golang: { unresolvedHome: 'D:/Tools/go-1.24', status: 'unresolved', source: 'legacy' },
     python: { status: 'empty', source: '' },
+    rust: { status: 'empty', source: '' },
   } as Record<string, { installationId?: string; unresolvedHome?: string; status: string; source: string }>,
   installations: [
     { id: 'demo-node-22', runtime: 'node', version: '22.14.0', major: '22', localHome: 'D:/Tools/node-v22.14.0', source: 'downloaded', label: 'Node LTS', vendor: '', available: true },
@@ -241,7 +242,7 @@ export async function mockInvoke(operation: string, payload: Record<string, unkn
       return copy(userRuntimeState)
     case 'runtime.discover': {
       const root = String((payload.roots as string[] | undefined)?.[0] ?? '').trim()
-      const candidates = root ? [] : [{ candidateId: 'demo-node-runtime', digest: 'demo-node-runtime', tool: 'node', version: '22.12.0', major: '22', home: 'C:/demo/node', binary: 'C:/demo/node/node.exe', source: 'path', evidence: ['directory-name'], availability: 'available', confidence: 'exact' }]
+      const candidates = root ? [] : [{ candidateId: 'demo-rust-stable', digest: 'demo-rust-stable', tool: 'rust', version: 'unknown', major: '', home: 'C:/Users/demo/.rustup/toolchains/stable-x86_64-pc-windows-msvc', binary: 'C:/Users/demo/.rustup/toolchains/stable-x86_64-pc-windows-msvc/bin/rustc.exe', source: 'rustup', evidence: ['rustup channel:stable', 'rustup default'], availability: 'available', confidence: 'unknown' }, { candidateId: 'demo-node-runtime', digest: 'demo-node-runtime', tool: 'node', version: '22.12.0', major: '22', home: 'C:/demo/node', binary: 'C:/demo/node/node.exe', source: 'path', evidence: ['directory-name'], availability: 'available', confidence: 'exact' }]
       return { scanId: 'demo-scan', status: 'complete', candidates, issues: [] }
     }
     case 'runtime.inspectPath': {

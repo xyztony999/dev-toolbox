@@ -77,6 +77,19 @@ modules:
     gates:
       gate1: {status: pass, note: 2026-10-28 git-identity-migration D0-D4 PASS；详见 gate1-git-identity-migration-2026-10-28.md}
       gate2: {status: warn, note: 2026-10-28 自动化链路全过（GR-01..06/WV/GC + 沙箱行为对比）；真实凭据 helper 交互与重启后人工点验待用户；详见 gate2-git-identity-migration-2026-10-28.md}
+  - name: toolchain-import
+    title: uv/rustup 外部工具链检测与登记
+    domain: runtime
+    stages:
+      requirement: {status: complete, note: D0 完成 uv/rustup 只读检测导入边界与暂不纳入清单}
+      api: {status: complete, note: D3 零新增操作——枚举级契约扩展（tool=rust、source=rustup/uv、buildSystems=cargo/rust）}
+      interaction: {status: complete, note: D4 既有页面枚举级扩展 PageSpec v1.0}
+      backend: {status: complete, note: rustup/uv 静态探测器 + rust Inspect/登记 + Cargo/rust-toolchain 识别；测试全绿，Windows 真机验证通过（含 deck-loop）}
+      frontend: {status: complete, note: 工具清单/mock 加 rust；GUI 截图复核候选行与全局默认 rust 行}
+      validation: {status: complete, note: Gate 2 判定 WARN（仅 Linux 真机路径未验证，安静降级无副作用）}
+    gates:
+      gate1: {status: pass, note: 2026-11-03 toolchain-import D0-D4 PASS；uv/rustup 目录布局须实现期真机验证（TH-10）；详见 gate1-toolchain-import-2026-11-03.md}
+      gate2: {status: warn, note: 2026-11-03 自动化+Windows 真机全过；Linux 探测路径待真机验证；顺手修 golang/java 版本解析；详见 gate2-toolchain-import-2026-11-03.md}
   - name: desktop-shell
     title: Go WebView 与 Vue/AntD 桌面宿主
     domain: desktop

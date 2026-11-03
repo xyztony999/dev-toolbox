@@ -23,7 +23,7 @@ var (
 	ErrUnavailable   = errors.New("RUNTIME_INSTALLATION_UNAVAILABLE")
 )
 
-var toolNames = []string{"node", "java", "maven", "gradle", "androidsdk", "golang", "python"}
+var toolNames = []string{"node", "java", "maven", "gradle", "androidsdk", "golang", "python", "rust"}
 
 type Selection struct {
 	InstallationID string `json:"installationId,omitempty"`

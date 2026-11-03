@@ -16,7 +16,7 @@ import (
 	"dev-toolbox/internal/userstate"
 )
 
-var tools = []string{"node", "java", "maven", "gradle", "androidsdk", "golang", "python"}
+var tools = []string{"node", "java", "maven", "gradle", "androidsdk", "golang", "python", "rust"}
 
 type Candidate struct {
 	CandidateID  string   `json:"candidateId"`
@@ -105,6 +105,17 @@ func Discover(ctx context.Context, requestedTools []string, roots []string) (Res
 						add(tool, filepath.Join(home, entry.Name()), "system")
 					}
 				}
+			}
+		}
+		if tool == "rust" {
+			for _, home := range rustupToolchainHomes() {
+				add("rust", home, "rustup")
+			}
+			markRustupDefault(&result)
+		}
+		if tool == "python" {
+			for _, home := range uvPythonHomes() {
+				add("python", home, "uv")
 			}
 		}
 	}
@@ -199,11 +210,13 @@ func expectedBinary(tool, home string) string {
 		rels = map[string][]string{
 			"node": {"node.exe"}, "java": {"bin/java.exe", "jre/bin/java.exe"}, "maven": {"bin/mvn.cmd"}, "gradle": {"bin/gradle.bat"},
 			"androidsdk": {"platform-tools/adb.exe"}, "golang": {"bin/go.exe"}, "python": {"python.exe", "Scripts/python.exe"},
+			"rust": {"bin/rustc.exe", "bin/rustc"},
 		}[tool]
 	} else {
 		rels = map[string][]string{
 			"node": {"bin/node", "node"}, "java": {"bin/java", "jre/bin/java"}, "maven": {"bin/mvn"}, "gradle": {"bin/gradle"},
 			"androidsdk": {"platform-tools/adb"}, "golang": {"bin/go"}, "python": {"bin/python3", "bin/python", "python3", "python"},
+			"rust": {"bin/rustc"},
 		}[tool]
 	}
 	for _, rel := range rels {
@@ -222,6 +235,7 @@ func staticVersion(tool, home string) (string, string, string) {
 		vendor := ""
 		version := ""
 		for _, line := range strings.Split(string(data), "\n") {
+			line = strings.TrimRight(line, "\r")
 			if strings.HasPrefix(line, "JAVA_VERSION=") {
 				version = strings.Trim(strings.TrimPrefix(line, "JAVA_VERSION="), `"`)
 			}
@@ -264,7 +278,9 @@ func staticVersion(tool, home string) (string, string, string) {
 		}
 	case "golang":
 		data, _ := os.ReadFile(filepath.Join(home, "VERSION"))
-		v := strings.TrimSpace(strings.SplitN(string(data), " ", 2)[0])
+		// VERSION 文件多行（go1.27.3\n\ntime...）：先取首行再判断前缀
+		firstLine := strings.SplitN(string(data), "\n", 2)[0]
+		v := strings.TrimSpace(strings.SplitN(firstLine, " ", 2)[0])
 		if strings.HasPrefix(v, "go") {
 			v = strings.TrimPrefix(v, "go")
 		}
@@ -280,6 +296,20 @@ func staticVersion(tool, home string) (string, string, string) {
 					return strings.TrimSpace(parts[1]), "Python", "pyvenv.cfg"
 				}
 			}
+		}
+		// uv 自管解释器目录名：cpython-3.13.5-windows-x86_64-none
+		if m := pythonBuildStandaloneDir.FindStringSubmatch(filepath.Base(home)); len(m) == 2 {
+			return m[1], "python-build-standalone", "uv python dir"
+		}
+	case "rust":
+		// rustup 工具链目录名：1.82.0-x86_64-pc-windows-msvc（精确）或
+		// stable/nightly 等通道名（版本如实 unknown，通道进证据）。
+		base := filepath.Base(home)
+		if m := rustSemverToolchain.FindStringSubmatch(base); len(m) == 2 {
+			return m[1], "rust-lang", "toolchain name:" + base
+		}
+		if m := rustChannelToolchain.FindStringSubmatch(base); len(m) == 2 {
+			return "", "rust-lang", "rustup channel:" + m[1]
 		}
 	}
 	base := filepath.Base(home)

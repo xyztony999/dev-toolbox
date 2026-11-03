@@ -150,7 +150,7 @@ onMounted(reload)
     <a-tab-pane key="defaults" tab="全局默认">
       <div class="group-actions"><a-button :loading="busy" @click="reload">刷新</a-button></div>
       <a-empty v-if="!state?.installations.length" description="尚无已登记运行时；可在「获取运行时」下载，或「导入」迁移 DevSwitch 用户状态。" />
-      <div v-for="tool in ['node', 'java', 'maven', 'gradle', 'androidsdk', 'golang', 'python']" :key="tool" class="runtime-pref-row">
+      <div v-for="tool in ['node', 'java', 'maven', 'gradle', 'androidsdk', 'golang', 'python', 'rust']" :key="tool" class="runtime-pref-row">
         <div><strong>{{ tool }}</strong><small>{{ selectedLabel(tool) }}</small></div>
         <a-space wrap>
           <a-button v-for="item in state?.installations.filter((entry) => entry.runtime === tool) ?? []" :key="item.id" size="small" :disabled="!item.available || state?.globalSelections[tool]?.installationId === item.id" @click="setDefault(tool, item.id)">
@@ -167,7 +167,7 @@ onMounted(reload)
     <a-tab-pane key="discover" tab="发现与登记">
       <div class="toolbar">
         <a-input v-model:value="discoveryRoot" class="grow" placeholder="可选：指定目录（只检查该目录及直接子目录）" />
-        <a-select v-model:value="inspectTool" style="width: 132px" :options="['node', 'java', 'maven', 'gradle', 'androidsdk', 'golang', 'python'].map((value) => ({ label: value, value }))" />
+        <a-select v-model:value="inspectTool" style="width: 132px" :options="['node', 'java', 'maven', 'gradle', 'androidsdk', 'golang', 'python', 'rust'].map((value) => ({ label: value, value }))" />
         <a-button :loading="busy" @click="discoverRuntimes">扫描本机</a-button>
         <a-button :loading="busy" :disabled="!discoveryRoot.trim()" @click="inspectRuntimePath">检查指定目录</a-button>
         <a-button type="primary" :disabled="!selectedCandidates.length" :loading="busy" @click="registerCandidates">登记所选</a-button>
