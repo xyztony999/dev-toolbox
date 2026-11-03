@@ -149,15 +149,19 @@ func TestOpenBuildsArgvEnvAndCwd(t *testing.T) {
 	}
 	t.Cleanup(func() { startSession = original })
 
-	result, err := Open(context.Background(), root, "cmd")
+	// Windows 经 conhost 新控制台启动；Linux 直接启动。exe 与 argv
+	// 语义跨平台断言：命令载体正确、终端保持打开、cwd/env 注入到位。
+	terminalChoice := "cmd"
+	if runtime.GOOS != "windows" {
+		terminalChoice = "bash"
+	}
+	result, err := Open(context.Background(), root, terminalChoice)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if result.Pid != 777 || result.TerminalID != "cmd" {
+	if result.Pid != 777 || result.TerminalID != terminalChoice {
 		t.Fatalf("result wrong: %+v", result)
 	}
-	// Windows 经 conhost 新控制台启动；Linux 直接启动。exe 与 argv
-	// 语义跨平台断言：命令载体正确、终端保持打开、cwd/env 注入到位。
 	joined := strings.Join(gotArgv, " ")
 	if runtime.GOOS == "windows" {
 		if !strings.HasSuffix(strings.ToLower(gotExe), "conhost.exe") {
@@ -169,7 +173,7 @@ func TestOpenBuildsArgvEnvAndCwd(t *testing.T) {
 			}
 		}
 	} else {
-		if !strings.HasSuffix(strings.ToLower(gotExe), "cmd") && !strings.HasSuffix(strings.ToLower(gotExe), "bash") {
+		if !strings.HasSuffix(strings.ToLower(gotExe), "bash") {
 			t.Fatalf("exe wrong: %q", gotExe)
 		}
 		if !strings.Contains(joined, "-i") {
