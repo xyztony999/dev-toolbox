@@ -46,12 +46,14 @@ func TestDiscoverRustupToolchains(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(result.Candidates) != 2 {
-		t.Fatalf("expected 2 rust candidates, got %+v", result.Candidates)
-	}
 	byHome := map[string]Candidate{}
 	for _, item := range result.Candidates {
-		byHome[item.Home] = item
+		if item.Source == "rustup" {
+			byHome[item.Home] = item
+		}
+	}
+	if len(byHome) != 2 {
+		t.Fatalf("expected 2 rustup candidates, got %+v", result.Candidates)
 	}
 	gotExact, ok := byHome[exact]
 	if !ok {
@@ -110,10 +112,17 @@ func TestDiscoverUvPythons(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(result.Candidates) != 1 {
-		t.Fatalf("expected exactly the uv candidate, got %+v", result.Candidates)
+	// 只断言 uv 候选（系统 PATH 的 python 候选随环境而变，不属本测试意图）
+	var uvCandidates []Candidate
+	for _, item := range result.Candidates {
+		if item.Source == "uv" {
+			uvCandidates = append(uvCandidates, item)
+		}
 	}
-	got := result.Candidates[0]
+	if len(uvCandidates) != 1 {
+		t.Fatalf("expected exactly one uv candidate, got %+v", uvCandidates)
+	}
+	got := uvCandidates[0]
 	if got.Source != "uv" || got.Version != "3.13.5" || got.Confidence != "exact" || got.Vendor != "python-build-standalone" {
 		t.Fatalf("unexpected uv candidate: %+v", got)
 	}
