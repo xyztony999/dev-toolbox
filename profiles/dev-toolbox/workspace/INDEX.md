@@ -10,8 +10,8 @@ modules:
       requirement: {status: complete, note: 用户约束与静态证据已登记}
       validation: {status: complete, note: 三个 profile check 均 PASS；激活 7 项；doctor 13 PASS 和插件模式预期 D-14 WARN；详见接入报告}
     gates:
-      gate1: {status: pending, note: 本轮未执行设计门控}
-      gate2: {status: pending, note: 本轮无产品实现}
+      gate1: {status: not_applicable, note: 引导记录切片，无设计门控语义}
+      gate2: {status: not_applicable, note: 引导记录切片，无交付门控语义}
   - name: project-context
     title: 项目/仓库/模块发现与上下文
     domain: project
