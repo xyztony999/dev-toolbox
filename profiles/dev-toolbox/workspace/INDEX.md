@@ -5,7 +5,7 @@ pipeline:
 modules:
   - name: onboarding
     title: 项目初始化、技术栈盘点与 Profile 接入
-    domain: platform
+    domain: core
     stages:
       requirement: {status: complete, note: 用户约束与静态证据已登记}
       validation: {status: complete, note: 三个 profile check 均 PASS；激活 7 项；doctor 13 PASS 和插件模式预期 D-14 WARN；详见接入报告}
@@ -105,7 +105,7 @@ modules:
       gate2: {status: pass, note: 2026-11-03 GR-01..06 + 真机 CLI/GUI 全过；详见 gate2-git-remote-management-2026-11-03.md}
   - name: session-launcher
     title: 会话启动器——上下文终端
-    domain: platform
+    domain: core
     stages:
       requirement: {status: complete, note: D0 完成边界：注入仅子进程/终端枚举/Git 身份只预览；WT 与任意命令不纳入}
       api: {status: complete, note: D3 session.preview/open 契约 v1.0（SessionToolState/TerminalId 枚举、环境组装规范）}

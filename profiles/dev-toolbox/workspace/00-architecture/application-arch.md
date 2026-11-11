@@ -1,42 +1,53 @@
-# 应用架构 — DevToolbox（项目上下文范围）
+# 应用架构 — DevToolbox（全局）
 
-版本：v1.0 | 日期：2026-10-27 | 状态：D1 初稿
+版本：v2.0 | 日期：2026-11-11 | 状态：与 BA v2.0 联动重划
 
-## 1. 应用域与模块
+## 1. 应用域分层（DDD）
 
-| DDD 分层 | 功能模块 | 功能子模块 | 对应业务活动 |
-|---|---|---|---|
-| 平台支撑域 | 项目上下文 | 项目登记与发现 | 登记、发现仓库/模块、核对声明、刷新/移除 |
+| 分层 | 应用域 | 聚合根/核心对象 | 包映射 | 归类理由 |
+|---|---|---|---|---|
+| **核心业务域** | 项目上下文 | Project（聚合 Repository/Module/RuntimeRequirement） | internal/project | 产品主链入口；有独立事实源（扫描证据）与状态（revision） |
+| **核心业务域** | 环境应用与会话 | EffectiveContext / Session | internal/session | 产品差异化主线：把资产"应用"为可工作会话；深建模对象（求值、注入、终端适配） |
+| 支撑业务域 | 运行时管理 | RuntimeInstallation / GlobalRuntimeSelection | internal/runtimecatalog, runtimeinstall, userstate | 为会话供给运行时资产；含发现/安装/默认/导入四组业务规则 |
+| 支撑业务域 | Git 身份与仓库协作 | IdentityProfile（聚合 Binding/Credential 通道）/ RemoteInfo | internal/gitidentity | 为会话供给身份与协作配置；全量覆盖、绑定、审计等强业务规则 |
+| 基础数据域 | ——（无） | —— | —— | 本产品无字典/组织类共享主数据；用户级清单归各支撑域自有（如实空缺，不虚构） |
+| 平台支撑域 | 桌面宿主与桥接 | —— | internal/desktop | 白名单桥接/异步分发/WebView 加载/UI 注入，零业务语义 |
+| 平台支撑域 | 遗留迁移工具集 | ImportRecord | 各域内的 legacy 入口（userstate/gitidentity） | 工具性能力；随来源增长，不承载核心模型 |
 
-## 2. 服务边界
+## 2. 关键架构决策
 
-| 服务 | 职责 | 依赖方向 |
-|---|---|---|
-| ProjectDiscovery | 只读目录扫描、仓库/模块/版本证据发现 | 应用服务 → 文件系统/Git 元数据适配器 |
-| ProjectRegistry | 项目登记、查询、移除和扫描快照保存 | 应用服务 → DevToolbox 自有数据存储 |
-| ContextQuery | 汇总项目与发现快照供 CLI/GUI 展示 | CLI/GUI → 共用 Go 应用服务 |
+1. **模块 ≠ 领域边界**：INDEX 中的模块是**交付批次**（迁移切片），不是架构边界。例如 toolchain-import 的代码落在 runtimecatalog/external.go（运行时管理域），git-remote-management 落在 gitidentity/remote.go（Git 域）。新功能按领域归属包结构，不新建平行模块。
+2. **两个核心域的关系**：项目上下文产出"要求"（Requirement），会话域消费"资产"（运行时安装+身份档案）产出"生效环境"。两域通过 userstate/gitidentity 的只读查询衔接，互不写对方状态——这是 ADR-006（共享要求与本机绑定分离）的应用层落点。
+3. **会话域是唯一"应用"出口**：所有资产最终经 EffectiveContext 求值进入终端会话；未来的一键应用（ApplyPlan）也应落在此域，而不是散到各支撑域。
+4. **userstate 的双重角色**：对运行时域是资产清单（installations+selections），对会话域是只读输入；其 legacy 导入职责属平台迁移工具集视角，代码位置不变。
 
-## 3. 组件关系
+## 3. 调用关系（运行时视角）
 
-CLI 与 Go WebView 宿主调用相同的 Go 应用服务。Vue 页面通过白名单桥接请求数据，不直接访问磁盘或启动进程。文件系统扫描器和 Git 元数据读取器是可替换适配器，解析器只接收文本/文件事实，不写业务存储。
+```
+CLI ─────────────────┐
+                     ├→ Go 应用服务（同一套）
+WebView(白名单桥接) ─┤    ├─ 核心域：project（扫描/登记）  session（求值/启动）
+                     │    ├─ 支撑域：runtimecatalog/install/userstate（只读供给+显式写）
+                     │    │          gitidentity（档案/remote/凭据/体检，只读供给+显式写）
+                     │    └─ 平台域：desktop（桥接/宿主） legacy 入口（迁移工具）
+                     └─ 前端不执行 shell、不复制核心状态（WV-04）
+```
 
-## 4. 质量属性
+## 4. 质量属性（全局）
 
-- 扫描可取消、可重入；错误按路径和原因分类。
-- 忽略目录与允许读取的清单类型由显式策略控制。
-- 文件路径在扫描根内规范化；越界链接不跟随。
-- 项目登记写入采用原子替换；用户目录保持只读。
-- Windows/Linux 为目标平台；平台路径与权限差异由适配器隔离。
+- 所有外部进程（git/终端/provider 下载）参数数组执行、context 超时、显式 cwd/env；平台差异经 build tags 适配器隔离（GC-02/03）。
+- 用户状态写入原子替换 + 文件锁；并发写经 revision/摘要冲突检测。
+- 桥接操作白名单注册；超 1.5MB 内嵌包回退临时文件导航（WebView2 实测约束）。
+- 前端错误通道 + 心跳标记常驻（frontend-error.log）。
+- Windows/Linux 双平台 CI 门禁；GUI 构建与静态 CLI 分别验证（GC-08）。
 
-## 5. 功能清单摘要
+## 5. 与模块文档的关系
 
-| 菜单/视图 | 功能 |
-|---|---|
-| 项目 | 登记目录、查看项目列表、移除登记 |
-| 项目详情 | 查看仓库与模块树、重扫、查看版本要求来源及解析状态 |
+各模块的 application-arch-*.md 保持为交付切片的详细视图；本文档为全局权威分层。冲突时以本文档为准并回改模块文档。
 
 ## 6. 更新记录
 
 | 版本 | 日期 | 变更类型 | 说明 |
 |---|---|---|---|
-| v1.0 | 2026-10-27 | initial | 建立项目上下文应用边界 |
+| v1.0 | 2026-10-27 | initial | 仅项目上下文域初稿 |
+| v2.0 | 2026-11-11 | redivision | DDD 四层全局归类；确立"模块≠领域边界"与"会话为唯一应用出口"决策 |
