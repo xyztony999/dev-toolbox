@@ -1,0 +1,94 @@
+{
+  "_generated": {
+    "version": 2,
+    "note": "本文件由 engine-gui 文档中心根据项目架构自动生成，可手工编辑（编辑后原样生效）；删除本文件后下次访问将按最新架构重新生成。",
+    "generatedAt": "2026-11-11T11:47:49.306Z",
+    "generator": "engine-gui doc-center 生成器（/dc/api/domains · /api/projects/:id/funcview）"
+  },
+  "names-map": {},
+  "module-docs": {
+    "domains": {
+      "阶段 1：认识项目": {
+        "name": "阶段 1：认识项目",
+        "layer": "业务域",
+        "related": "",
+        "fishbone": {
+          "spine": [
+            {
+              "code": "S1",
+              "name": "阶段 1：认识项目",
+              "desc": ""
+            }
+          ],
+          "upperRibs": [],
+          "lowerRibs": []
+        }
+      },
+      "阶段 2：准备环境": {
+        "name": "阶段 2：准备环境",
+        "layer": "业务域",
+        "related": "",
+        "fishbone": {
+          "spine": [
+            {
+              "code": "S2",
+              "name": "阶段 2：准备环境",
+              "desc": ""
+            }
+          ],
+          "upperRibs": [],
+          "lowerRibs": []
+        }
+      },
+      "阶段 3：连接协作": {
+        "name": "阶段 3：连接协作",
+        "layer": "业务域",
+        "related": "",
+        "fishbone": {
+          "spine": [
+            {
+              "code": "S3",
+              "name": "阶段 3：连接协作",
+              "desc": ""
+            }
+          ],
+          "upperRibs": [],
+          "lowerRibs": []
+        }
+      },
+      "阶段 4：进入工作": {
+        "name": "阶段 4：进入工作",
+        "layer": "业务域",
+        "related": "",
+        "fishbone": {
+          "spine": [
+            {
+              "code": "S4",
+              "name": "阶段 4：进入工作",
+              "desc": ""
+            }
+          ],
+          "upperRibs": [],
+          "lowerRibs": []
+        }
+      },
+      "阶段 5：保持健康": {
+        "name": "阶段 5：保持健康",
+        "layer": "业务域",
+        "related": "",
+        "fishbone": {
+          "spine": [
+            {
+              "code": "S5",
+              "name": "阶段 5：保持健康",
+              "desc": ""
+            }
+          ],
+          "upperRibs": [],
+          "lowerRibs": []
+        }
+      }
+    },
+    "domainDetails": {}
+  }
+}
