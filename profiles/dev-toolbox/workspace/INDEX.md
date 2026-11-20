@@ -15,6 +15,7 @@ modules:
   - name: project-context
     title: 项目/仓库/模块发现与上下文
     domain: project
+    changelog_2026_11_18: 详情页改四页签分区导航（概览/Git 仓库/构建模块/扫描提示）+ 关键字过滤与"仅看待处理"；运行时声明状态中文标签+悬浮说明+证据明细；androidsdk compileSdk/minSdk 冲突误报已修
     stages:
       requirement: {status: complete, note: D0-D2 已完成只读项目/仓库/模块发现设计}
       api: {status: complete, note: D3 Go 应用服务契约 v1.0}
@@ -24,7 +25,7 @@ modules:
       validation: {status: todo}
     gates:
       gate1: {status: pass, note: 2026-10-27 D0-D4 project-context 设计通过；详见 gate1-project-context-2026-10-27.md}
-      gate2: {status: pending}
+      gate2: {status: pending, note: 2026-11-18 增量修复见 gate2-desktop-ux-fixes-2026-11-18.md；完整 Gate 2 待排}
   - name: runtime-migration
     title: 七工具能力迁移与版本约束
     domain: runtime
@@ -115,7 +116,7 @@ modules:
       validation: {status: complete, note: Gate 2 PASS——含 NavigateToString 1.5MB 上限发现与 file:// 回退修复}
     gates:
       gate1: {status: pass, note: 2026-11-03 session-launcher D0-D4 PASS；详见 gate1-session-launcher-2026-11-03.md}
-      gate2: {status: pass, note: 2026-11-04 自动化+Windows 真机 CLI/GUI 全过；详见 gate2-session-launcher-2026-11-04.md}
+      gate2: {status: pass, note: 2026-11-04 自动化+Windows 真机 CLI/GUI 全过；2026-11-18 增量：启动链改 CREATE_NEW_CONSOLE 直启（修复 GUI 打不开）、探测排除 WSL bash、面板重设计，见 gate2-desktop-ux-fixes-2026-11-18.md}
   - name: desktop-shell
     title: Go WebView 与 Vue/AntD 桌面宿主
     domain: desktop

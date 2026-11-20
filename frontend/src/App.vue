@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { message, Modal, theme } from 'ant-design-vue'
 import { invoke, isDemoClient } from './bridge'
 import type { Candidate, Project, RuntimeRequirement } from './types'
@@ -134,6 +134,65 @@ function requirementLabel(requirement: RuntimeRequirement): string {
   return `${requirement.runtime}: ${requirement.rawConstraint ?? 'unknown'}`
 }
 
+// 详情页功能区导航：登记目录下嵌套多项目时，避免仓库与模块混在一个长列表里滚动。
+const detailTab = ref<'overview' | 'repos' | 'modules' | 'issues'>('overview')
+const repoFilter = ref('')
+const moduleFilter = ref('')
+const onlyPendingModules = ref(false)
+
+watch(activeId, () => {
+  detailTab.value = 'overview'
+  repoFilter.value = ''
+  moduleFilter.value = ''
+  onlyPendingModules.value = false
+})
+
+const filteredRepos = computed(() => {
+  const keyword = repoFilter.value.trim().toLowerCase()
+  if (!selected.value) return []
+  if (!keyword) return selected.value.repositories
+  return selected.value.repositories.filter((repo) => repo.path.toLowerCase().includes(keyword))
+})
+
+const moduleHasPending = (module: { requirements: RuntimeRequirement[] }): boolean =>
+  module.requirements.some((item) => item.status === 'unknown' || item.status === 'conflict')
+
+const filteredModules = computed(() => {
+  const keyword = moduleFilter.value.trim().toLowerCase()
+  if (!selected.value) return []
+  let list = selected.value.modules
+  if (onlyPendingModules.value) list = list.filter((module) => moduleHasPending(module))
+  if (!keyword) return list
+  return list.filter((module) => module.relativePath.toLowerCase().includes(keyword))
+})
+
+const requirementSummary = computed(() => {
+  const summary = { resolved: 0, unknown: 0, conflict: 0, unsupported: 0 }
+  for (const module of selected.value?.modules ?? []) {
+    for (const requirement of module.requirements) {
+      if (requirement.status in summary) summary[requirement.status as keyof typeof summary] += 1
+    }
+  }
+  return summary
+})
+
+const requirementStatusMeta: Record<RuntimeRequirement['status'], { color: string; label: string; explain: string }> = {
+  resolved: { color: 'blue', label: '已声明', explain: '构建清单中找到了明确的版本声明，可直接作为选择依据。' },
+  unknown: { color: 'default', label: '未声明', explain: '构建清单存在，但没有发现版本声明。产品只如实呈现，不会擅自使用 latest；你可以在清单中补齐版本后再重新扫描。' },
+  conflict: { color: 'red', label: '冲突', explain: '同一个运行时有多个互斥的版本声明（如同一份 pom 里两个不同的 Java 版本）。产品不自动替你选一个，请以证据为准人工决定。' },
+  unsupported: { color: 'orange', label: '不支持', explain: '该构建系统当前不在识别范围内。' },
+}
+
+function constraintText(requirement: RuntimeRequirement): string {
+  return requirement.rawConstraint || '未声明'
+}
+
+function evidenceLines(requirement: RuntimeRequirement): string[] {
+  const evidence = requirement.evidence ?? []
+  if (!evidence.length) return requirement.sourcePath ? [requirement.sourcePath] : []
+  return evidence.map((item) => `${item.sourcePath} · ${item.locator} = ${item.rawValue}（${item.parserId}）`)
+}
+
 async function pickFolder() {
   picking.value = true
   try {
@@ -229,7 +288,6 @@ onMounted(loadProjects)
               </div>
             </div>
             <a-alert v-for="issue in candidate.issues" :key="`${issue.code}-${issue.relativePath}`" :message="issue.message" :description="issue.relativePath" type="warning" show-icon class="issue-alert" />
-            <a-alert v-for="issue in candidate.issues" :key="`${issue.code}-${issue.relativePath}`" :message="issue.message" :description="issue.relativePath" type="warning" show-icon class="issue-alert" />
             <div class="form-actions"><a-button @click="candidate = undefined">取消</a-button><a-button type="primary" :loading="busy" @click="registerProject">确认登记</a-button></div>
             </div>
           </template>
@@ -241,10 +299,34 @@ onMounted(loadProjects)
             <div class="summary-card"><span class="summary-label">最近扫描</span><strong>{{ new Date(selected.lastScanAt).toLocaleString() }}</strong></div>
             <div class="summary-card"><span class="summary-label">扫描状态</span><a-tag :color="selected.scanStatus === 'complete' ? 'green' : 'orange'">{{ selected.scanStatus }}</a-tag></div>
           </section>
-          <section class="section">
-            <div class="section-title"><div><h2>仓库</h2></div></div>
-            <a-empty v-if="selected.repositories.length === 0" description="未发现 Git 工作树" />
-            <div v-for="repo in selected.repositories" :key="repo.id" class="repo-row repo-card">
+          <a-tabs v-model:activeKey="detailTab" class="detail-tabs">
+            <a-tab-pane key="overview" tab="概览">
+              <div class="preview-grid">
+                <div class="preview-stat"><strong>{{ selected.repositories.length }}</strong><span>Git 工作树</span></div>
+                <div class="preview-stat"><strong>{{ selected.modules.length }}</strong><span>构建模块</span></div>
+                <div class="preview-stat"><strong>{{ selected.issues?.length ?? 0 }}</strong><span>扫描提示</span></div>
+              </div>
+              <div class="section">
+                <div class="section-title"><div><h2>运行时版本声明</h2><p>按构建模块汇总，状态含义见各条目。</p></div></div>
+                <div class="requirement-legend">
+                  <a-tag color="blue">已声明 {{ requirementSummary.resolved }}</a-tag>
+                  <a-tag color="red">冲突 {{ requirementSummary.conflict }}</a-tag>
+                  <a-tag>未声明 {{ requirementSummary.unknown }}</a-tag>
+                  <a-tag v-if="requirementSummary.unsupported" color="orange">不支持 {{ requirementSummary.unsupported }}</a-tag>
+                </div>
+                <div class="requirement-legend-text">
+                  <p><strong>未声明</strong>：构建清单存在（如 pom.xml、build.gradle、package.json），但其中没有写版本号。产品只如实呈现，不会擅自使用 latest。</p>
+                  <p><strong>冲突</strong>：同一个运行时出现了多个互斥的版本声明。产品不自动替你选一个；构建模块卡片里列出了每处声明的文件与属性，改哪个由你决定。</p>
+                </div>
+              </div>
+            </a-tab-pane>
+            <a-tab-pane key="repos" :tab="`Git 仓库 ${selected.repositories.length}`">
+              <div class="toolbar">
+                <a-input v-model:value="repoFilter" class="filter-input" allow-clear placeholder="按路径关键字过滤仓库" />
+                <span class="toolbar-count">显示 {{ filteredRepos.length }} / {{ selected.repositories.length }}</span>
+              </div>
+              <a-empty v-if="filteredRepos.length === 0" :description="selected.repositories.length ? '没有匹配的仓库' : '未发现 Git 工作树'" />
+              <div v-for="repo in filteredRepos" :key="repo.id" class="repo-row repo-card">
               <div>
                 <strong>{{ repo.path }}</strong>
                 <small>{{ repo.source }}</small>
@@ -257,26 +339,41 @@ onMounted(loadProjects)
                 <a-tag>{{ repo.kind }}</a-tag>
               </a-space>
             </div>
-          </section>
-          <section class="section">
-            <div class="section-title"><div><h2>构建模块</h2></div></div>
-            <a-empty v-if="selected.modules.length === 0" description="未发现支持的构建清单" />
-            <div v-for="module in selected.modules" :key="module.id" class="module-card">
+            </a-tab-pane>
+            <a-tab-pane key="modules" :tab="`构建模块 ${selected.modules.length}`">
+              <div class="toolbar">
+                <a-input v-model:value="moduleFilter" class="filter-input" allow-clear placeholder="按模块路径关键字过滤" />
+                <a-checkbox v-model:checked="onlyPendingModules">仅看待处理（未声明/冲突）</a-checkbox>
+                <span class="toolbar-count">显示 {{ filteredModules.length }} / {{ selected.modules.length }}</span>
+              </div>
+              <a-empty v-if="filteredModules.length === 0" :description="selected.modules.length ? '没有匹配的构建模块' : '未发现支持的构建清单'" />
+              <div v-for="module in filteredModules" :key="module.id" class="module-card">
               <div class="module-header"><strong>{{ module.relativePath }}</strong><a-space wrap><a-tag v-for="build in module.buildSystems" :key="build">{{ build }}</a-tag></a-space></div>
               <div v-if="module.requirements.length" class="requirement-list">
                 <div v-for="(requirement, index) in module.requirements" :key="`${requirement.runtime}-${index}`" class="requirement-detail">
-                  <div><strong>{{ requirement.runtime }}</strong><a-tag :color="requirement.status === 'conflict' ? 'red' : requirement.status === 'unknown' ? 'default' : 'blue'">{{ requirement.status }}</a-tag></div>
-                  <code>{{ requirement.rawConstraint || '未声明' }}</code>
-                  <small>{{ requirement.sourcePath || '未发现来源' }} · 置信度 {{ requirement.confidence }}</small>
+                  <div>
+                    <strong>{{ requirement.runtime }}</strong>
+                    <a-popover overlay-class-name="requirement-popover">
+                      <template #content>
+                        <p class="popover-title">{{ requirementStatusMeta[requirement.status].label }}：{{ requirementStatusMeta[requirement.status].explain }}</p>
+                        <p v-for="line in evidenceLines(requirement)" :key="line" class="popover-evidence"><code>{{ line }}</code></p>
+                        <p class="popover-evidence">置信度 {{ requirement.confidence }}</p>
+                      </template>
+                      <a-tag :color="requirementStatusMeta[requirement.status].color" class="requirement-status-tag">{{ requirementStatusMeta[requirement.status].label }}</a-tag>
+                    </a-popover>
+                  </div>
+                  <code>{{ constraintText(requirement) }}</code>
+                  <small>{{ requirement.sourcePath || '未发现来源' }}</small>
                 </div>
               </div>
               <a-empty v-else description="未发现运行时版本声明" :image-style="{ height: '32px' }" />
             </div>
-          </section>
-          <section v-if="selected.issues?.length" class="section">
-            <div class="section-title"><div><h2>扫描提示</h2></div></div>
-            <a-alert v-for="issue in selected.issues" :key="`${issue.code}-${issue.relativePath}`" :message="issue.message" :description="issue.relativePath" type="warning" show-icon class="issue-alert" />
-          </section>
+            </a-tab-pane>
+            <a-tab-pane key="issues" :tab="`扫描提示 ${selected.issues?.length ?? 0}`">
+              <a-alert v-if="!selected.issues?.length" type="info" show-icon message="没有扫描提示" description="本次扫描未发现权限受限、深度超限或其他可恢复问题。" />
+              <a-alert v-for="issue in selected.issues" :key="`issue-${issue.code}-${issue.relativePath}`" :message="issue.message" :description="issue.relativePath" type="warning" show-icon class="issue-alert" />
+            </a-tab-pane>
+          </a-tabs>
         </template>
         <RemoteManager v-model:open="remoteManager.open" :repo-path="remoteManager.path" :repo-name="remoteManager.name" />
         <SessionManager v-model:open="sessionOpen" :repo-paths="sessionRepoPaths" :default-path="sessionDefaultPath" />

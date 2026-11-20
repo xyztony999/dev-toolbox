@@ -42,6 +42,20 @@ func writeUserState(t *testing.T, root string, selections map[string]userstate.S
 	}
 }
 
+// TestDetectTerminalsExcludesWslBash：WSL 的 System32\bash.exe 不是
+// Git Bash，不得作为终端候选（Windows 专属探测回归）。
+func TestDetectTerminalsExcludesWslBash(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("windows-only terminal detection")
+	}
+	wslBash := filepath.Join(os.Getenv("SystemRoot"), "System32", "bash.exe")
+	for _, terminal := range DetectTerminals() {
+		if terminal.ID == "bash" && strings.EqualFold(terminal.ExePath, wslBash) {
+			t.Fatalf("WSL bash must not be listed as Git Bash: %+v", terminal)
+		}
+	}
+}
+
 func TestResolveContextInjectionAndSkips(t *testing.T) {
 	root := sessionSandbox(t)
 	nodeHome := filepath.Join(root, "node-v22")
@@ -149,8 +163,9 @@ func TestOpenBuildsArgvEnvAndCwd(t *testing.T) {
 	}
 	t.Cleanup(func() { startSession = original })
 
-	// Windows 经 conhost 新控制台启动；Linux 直接启动。exe 与 argv
-	// 语义跨平台断言：命令载体正确、终端保持打开、cwd/env 注入到位。
+	// Windows 经 CREATE_NEW_CONSOLE 直接启动目标终端；Linux 直接启动。
+	// exe 与 argv 语义跨平台断言：命令载体正确、终端保持打开、
+	// cwd/env 注入到位。
 	terminalChoice := "cmd"
 	if runtime.GOOS != "windows" {
 		terminalChoice = "bash"
@@ -164,7 +179,7 @@ func TestOpenBuildsArgvEnvAndCwd(t *testing.T) {
 	}
 	joined := strings.Join(gotArgv, " ")
 	if runtime.GOOS == "windows" {
-		if !strings.HasSuffix(strings.ToLower(gotExe), "conhost.exe") {
+		if !strings.HasSuffix(strings.ToLower(gotExe), terminalChoice+".exe") {
 			t.Fatalf("exe wrong: %q", gotExe)
 		}
 		for _, expect := range []string{"cmd.exe", "/K"} {

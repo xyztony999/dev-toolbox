@@ -307,7 +307,8 @@ func makeModule(files *moduleFiles) Module {
 			seenRuntime[runtime] = true
 		}
 	}
-	sort.Slice(requirements, func(i, j int) bool {
+	// 稳定排序：同键条目保留清单中的声明顺序（如 compileSdk 在 minSdk 前）。
+	sort.SliceStable(requirements, func(i, j int) bool {
 		if requirements[i].Runtime != requirements[j].Runtime {
 			return requirements[i].Runtime < requirements[j].Runtime
 		}
@@ -333,17 +334,29 @@ func requirement(runtime, raw, modulePath, filename, locator, confidence, parser
 }
 
 func markConflicts(reqs []RuntimeRequirement) {
+	// 冲突按键默认按 runtime 分组：同名运行时只有一个生效版本，
+	// 多来源互斥值即冲突（区间混入时降级 unknown，不擅自任选）。
+	// androidsdk 例外：compileSdk 与 minSdk 是同一运行时的两个不同
+	// 属性，各自独立成立，不构成冲突（SEG2105/app 误报即此）。
+	group := func(r RuntimeRequirement) string {
+		if r.Runtime == "androidsdk" && len(r.Evidence) > 0 {
+			return "androidsdk:" + r.Evidence[0].Locator
+		}
+		return r.Runtime
+	}
 	values := map[string]map[string]bool{}
 	for _, r := range reqs {
-		if values[r.Runtime] == nil {
-			values[r.Runtime] = map[string]bool{}
+		key := group(r)
+		if values[key] == nil {
+			values[key] = map[string]bool{}
 		}
-		values[r.Runtime][strings.ToLower(strings.TrimSpace(r.RawConstraint))] = true
+		values[key][strings.ToLower(strings.TrimSpace(r.RawConstraint))] = true
 	}
 	for i := range reqs {
-		if len(values[reqs[i].Runtime]) > 1 {
+		seen := values[group(reqs[i])]
+		if len(seen) > 1 {
 			allExact := true
-			for raw := range values[reqs[i].Runtime] {
+			for raw := range seen {
 				if !regexp.MustCompile(`(?i)^v?[0-9]+(?:\.[0-9]+){0,2}$`).MatchString(raw) {
 					allExact = false
 					break

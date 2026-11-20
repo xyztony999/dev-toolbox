@@ -12,7 +12,7 @@ import (
 )
 
 // TestStartChainInheritsEnv 实证产品启动链（os.StartProcess →
-// conhost → 新窗口 powershell）的环境继承：新窗口进程执行
+// CREATE_NEW_CONSOLE 新窗口 powershell）的环境继承：新窗口进程执行
 // EncodedCommand 写出注入的变量值。脚本用 base64 载体，无命令拼接。
 func TestStartChainInheritsEnv(t *testing.T) {
 	if testing.Short() {
@@ -34,8 +34,8 @@ func TestStartChainInheritsEnv(t *testing.T) {
 
 	info := TerminalInfo{ID: "diag", Label: "diag"}
 	info.ExePath = filepath.Join(os.Getenv("SystemRoot"), "System32", "WindowsPowerShell", "v1.0", "powershell.exe")
-	// 直接以 powershell 为目标验证继承（产品链路中它由 conhost 启动，
-	// 继承语义相同：均为 ProcAttr.Env 一次传递）
+	// 直接以 powershell 为目标验证继承（产品链路即直启 powershell，
+	// 此处以 -EncodedCommand 一次性脚本替代 -NoExit 会话）
 	argv := []string{"powershell", "-NoLogo", "-NoProfile", "-EncodedCommand", encoded}
 	if _, err := startSession(info.ExePath, argv, attr); err != nil {
 		t.Fatalf("start chain: %v", err)

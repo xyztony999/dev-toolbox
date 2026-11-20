@@ -25,8 +25,15 @@
 
 `session.preview`/`session.open` 字段与 D3 一致；预览数据驱动整面板，无前端自行推断。
 
+## v1.1 变更说明（2026-11-18，增量修复）
+
+启动链：Windows 取消 conhost.exe 封装链路（GUI 子系统下派不出目标进程，既有控制台下劫持当前控制台），改为目标终端可执行文件 + `CREATE_NEW_CONSOLE` 直启，父侧 stdio 给三份 DevNull（`os.StartProcess` 的硬性要求）。Git Bash 探测排除 WSL 的 `System32\bash.exe`，优先 Git for Windows 安装位置。
+
+面板：顶部一句意图说明（在所选目录打开新终端，按全局选择注入 PATH/JAVA_HOME，只影响这个窗口）；工具逐行展示（工具名 + 注入/跳过 tag + 版本或跳过原因 + 注入 binDir）；JAVA_HOME 与 PATH 前置项摘要；生效 Git 身份行；工作目录与终端类型分区选择；无可用终端时告警并禁用主按钮；确认弹窗文案同步。`session.preview`/`session.open` 契约不变。
+
 ## 更新记录
 
 | 版本 | 日期 | 变更类型 | 说明 |
 |---|---|---|---|
+| v1.1 | 2026-11-18 | incremental | 启动链修复 + 面板意图重设计 |
 | v1.0 | 2026-11-03 | initial | 终端面板与两级入口 |

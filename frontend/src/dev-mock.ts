@@ -447,6 +447,29 @@ export async function mockInvoke(operation: string, payload: Record<string, unkn
     case 'git.legacyImport':
       if (!payload.confirmBackup || !payload.confirmImport) throw new Error('GIT_LEGACY_CONFIRMATION_REQUIRED')
       return { sourceKind: 'gitid', sourceDigest: payload.sourceDigest, backupPath: '.../backups/gitid/config-demo.json', importedAt: now(), created: 1, skipped: 0, conflicts: 0 }
+    case 'session.preview': {
+      const selected = userRuntimeState.installations.filter((item) => userRuntimeState.globalSelections[item.runtime]?.installationId === item.id && item.available)
+      const binFor = (runtime: string, home: string) => ['node', 'python'].includes(runtime) ? home : `${home}/bin`
+      return {
+        cwd: String(payload.path ?? '.'),
+        tools: ['node', 'java', 'maven', 'gradle', 'androidsdk', 'golang', 'python', 'rust'].map((tool) => {
+          const installation = selected.find((item) => item.runtime === tool)
+          if (installation) return { tool, status: 'injected', version: installation.version, binDir: binFor(tool, installation.localHome) }
+          const selection = userRuntimeState.globalSelections[tool]
+          return { tool, status: 'skipped', reason: selection?.status === 'unresolved' ? `待重新关联：${selection.unresolvedHome}` : '未选择' }
+        }),
+        javaHome: selected.find((item) => item.runtime === 'java')?.localHome,
+        pathPrepends: selected.map((item) => binFor(item.runtime, item.localHome)),
+        gitIdentity: { resolved: 'personal', profileId: 'personal' },
+        terminals: [
+          { id: 'powershell', label: 'PowerShell' },
+          { id: 'cmd', label: '命令提示符' },
+        ],
+      }
+    }
+    case 'session.open':
+      if (!payload.confirm) throw new Error('CONFIRMATION_REQUIRED')
+      return { terminalId: String(payload.terminalId ?? 'powershell'), pid: 4242 }
     default:
       throw new Error(`演示桥接不支持操作：${operation}`)
   }

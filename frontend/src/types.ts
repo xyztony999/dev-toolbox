@@ -1,6 +1,14 @@
 export type ScanStatus = 'complete' | 'partial' | 'cancelled'
 export type RequirementStatus = 'resolved' | 'unknown' | 'conflict' | 'unsupported'
 
+export interface Evidence {
+  sourcePath: string
+  locator: string
+  rawValue: string
+  parserId: string
+  observedAt?: string
+}
+
 export interface RuntimeRequirement {
   runtime: string
   rawConstraint?: string
@@ -8,6 +16,7 @@ export interface RuntimeRequirement {
   sourcePath?: string
   confidence: string
   status: RequirementStatus
+  evidence?: Evidence[]
 }
 
 export interface Repository {

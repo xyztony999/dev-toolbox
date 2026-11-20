@@ -44,11 +44,13 @@ func fileExists(path string) bool {
 	return err == nil && !info.IsDir()
 }
 
-// findGitBash 依次查 PATH 与常见安装位置；找不到返回空。
+// wslBash 是 Windows 自带的 WSL bash（bash.exe），不是 Git Bash：
+// 它既不接受 --login -i 的 msys 语义，也不是用户预期的终端。
+var wslBash = filepath.Join(os.Getenv("SystemRoot"), "System32", "bash.exe")
+
+// findGitBash 先查 Git for Windows 常见安装位置，再查 PATH 但排除
+// WSL 的 System32\bash.exe；找不到返回空。
 func findGitBash() string {
-	if path := searchPathFor("bash.exe"); path != "" {
-		return path
-	}
 	candidates := []string{
 		filepath.Join(os.Getenv("ProgramFiles"), "Git", "bin", "bash.exe"),
 		filepath.Join(os.Getenv("ProgramFiles(x86)"), "Git", "bin", "bash.exe"),
@@ -58,6 +60,9 @@ func findGitBash() string {
 		if fileExists(candidate) {
 			return candidate
 		}
+	}
+	if path := searchPathFor("bash.exe"); path != "" && !strings.EqualFold(path, wslBash) {
+		return path
 	}
 	return ""
 }
@@ -80,16 +85,9 @@ func searchPathFor(name string) string {
 // 终端有自己的新控制台，父侧给 DevNull 即可。
 var startSession = func(exePath string, argv []string, attr *os.ProcAttr) (int, error) {
 	if attr.Files == nil {
-		files := make([]*os.File, 3)
-		for i := range files {
-			handle, err := os.OpenFile(os.DevNull, os.O_RDWR, 0)
-			if err != nil {
-				return 0, err
-			}
-			defer handle.Close()
-			files[i] = handle
+		if files := nullStdHandles(); len(files) == 3 {
+			attr.Files = files
 		}
-		attr.Files = files
 	}
 	proc, err := os.StartProcess(exePath, argv, attr)
 	if err != nil {
@@ -99,9 +97,25 @@ var startSession = func(exePath string, argv []string, attr *os.ProcAttr) (int, 
 	return proc.Pid, nil
 }
 
+// nullStdHandles 提供三份 DevNull 句柄：os.StartProcess 在 Windows 上
+// 要求显式 stdio（Files 为 nil 直接 EINVAL）；终端窗口自带新控制台，
+// 父侧不需要交互流，用完由调用方 GC/句柄表回收。
+func nullStdHandles() []*os.File {
+	files := make([]*os.File, 3)
+	for i := range files {
+		handle, err := os.OpenFile(os.DevNull, os.O_RDWR, 0)
+		if err != nil {
+			return nil
+		}
+		files[i] = handle
+	}
+	return files
+}
+
 // Open 以注入环境在 cwd 启动终端。环境在服务端重新求值，不信任调用方。
-// Windows 经 `cmd /C start` 打开新控制台（窗口进程 stdio 由控制台提供，
-// 环境经中间 cmd 继承）；Linux 直接启动交互 shell 继承调用方 stdio。
+// Windows 以目标终端可执行文件 + CREATE_NEW_CONSOLE 开出新窗口
+// （环境经 ProcAttr.Env 一次传递）；Linux 直接启动交互 shell
+// 继承调用方 stdio。
 func Open(ctx context.Context, cwd, terminalID string) (*OpenResult, error) {
 	preview, err := ResolveContext(ctx, cwd)
 	if err != nil {
@@ -122,9 +136,10 @@ func Open(ctx context.Context, cwd, terminalID string) (*OpenResult, error) {
 	}
 	exePath, argv := launchFor(*chosen, preview.Cwd)
 	attr := &os.ProcAttr{
-		Dir: preview.Cwd,
-		Env: BuildEnv(os.Environ(), preview.PathPrepends, preview.JavaHome),
-		Sys: sessionSysProcAttr(),
+		Dir:   preview.Cwd,
+		Env:   BuildEnv(os.Environ(), preview.PathPrepends, preview.JavaHome),
+		Files: nullStdHandles(),
+		Sys:   sessionSysProcAttr(),
 	}
 	pid, err := startSession(exePath, argv, attr)
 	if err != nil {
