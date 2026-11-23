@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 512 512" role="img" aria-label="DevToolbox logo">
+  <defs>
+    <linearGradient id="dtx-tile" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1a3a5c"/>
+      <stop offset="1" stop-color="#0b1c2e"/>
+    </linearGradient>
+  </defs>
+  <rect x="40" y="40" width="432" height="432" rx="96" fill="url(#dtx-tile)"/>
+  <circle cx="176" cy="256" r="62" fill="none" stroke="#80e0c0" stroke-width="32"/>
+  <circle cx="176" cy="256" r="24" fill="#eafcf4"/>
+  <line x1="254" y1="256" x2="384" y2="256" stroke="#80e0c0" stroke-width="32" stroke-linecap="round"/>
+  <line x1="320" y1="256" x2="320" y2="312" stroke="#80e0c0" stroke-width="28" stroke-linecap="round"/>
+  <circle cx="320" cy="318" r="22" fill="#80e0c0"/>
+  <line x1="376" y1="256" x2="376" y2="336" stroke="#80e0c0" stroke-width="28" stroke-linecap="round"/>
+  <circle cx="376" cy="342" r="22" fill="#80e0c0"/>
+</svg>

@@ -1,7 +1,9 @@
 // Command icongen renders the DevToolbox application icon (navy rounded
-// square, mint git-branch glyph, dual identity tokens) and writes the
-// multi-size ICO to its fixed asset path. The geometry mirrors the SVG
-// design 1:1 in 512-unit space. Run from the repo root:
+// square, mint "identity key assembled from git commit nodes" glyph: a
+// commit-ring bow with a light core, a shaft, and two teeth ending in
+// commit nodes) and writes the multi-size ICO to its fixed asset path.
+// The geometry mirrors the SVG design 1:1 in 512-unit space. Run from the
+// repo root:
 //
 //	go run ./tools/icongen
 package main
@@ -37,10 +39,17 @@ var (
 )
 
 var (
-	lineA, lineB = pt{168, 140}, pt{168, 297}
-	polyA, polyB = pt{340, 168}, pt{340, 192}
-	arcCenter    = pt{210.4, 192.0}
-	arcRadius    = 129.6
+	// bow: commit-ring with a light core (dual-identity accent)
+	bow                        = pt{176, 256}
+	ringInner, ringOuter, dotR = 46.0, 78.0, 24.0
+	// shaft and teeth ending in commit nodes
+	shaftA, shaftB   = pt{254, 256}, pt{384, 256}
+	shaftHalf        = 16.0
+	tooth1A, tooth1B = pt{320, 256}, pt{320, 312}
+	tooth2A, tooth2B = pt{376, 256}, pt{376, 336}
+	toothHalf        = 14.0
+	node1, node2     = pt{320, 318}, pt{376, 342}
+	nodeR            = 22.0
 )
 
 func lerp(a, b, t float64) float64 { return a + (b-a)*t }
@@ -86,30 +95,16 @@ func inSquircle(p pt) bool {
 func dist(p, c pt) float64 { return math.Hypot(p.x-c.x, p.y-c.y) }
 
 func paintGlyph(p pt) bool {
-	half := strokeHalf
-	if distToSegment(p, lineA, lineB) <= half {
+	if d := dist(p, bow); d >= ringInner && d <= ringOuter {
 		return true
 	}
-	if distToSegment(p, polyA, polyB) <= half {
+	if distToSegment(p, shaftA, shaftB) <= shaftHalf {
 		return true
 	}
-	// quarter arc from polyB down toward the bottom node
-	dx, dy := p.x-arcCenter.x, p.y-arcCenter.y
-	if d := math.Hypot(dx, dy); d >= arcRadius-half && d <= arcRadius+half {
-		if angle := math.Atan2(dy, dx); angle >= -0.02 && angle <= math.Pi/2+0.02 {
-			return true
-		}
-	}
-	if distToSegment(p, pt{arcCenter.x + arcRadius, arcCenter.y}, polyB) <= half {
+	if distToSegment(p, tooth1A, tooth1B) <= toothHalf || dist(p, node1) <= nodeR {
 		return true
 	}
-	if distToSegment(p, polyB, pt{arcCenter.x, arcCenter.y + arcRadius}) <= half {
-		return true
-	}
-	if dist(p, pt{168, 140}) <= 52.0 {
-		return true
-	}
-	if dist(p, pt{340, 168}) <= 43.2 || dist(p, pt{168, 340}) <= 43.2 {
+	if distToSegment(p, tooth2A, tooth2B) <= toothHalf || dist(p, node2) <= nodeR {
 		return true
 	}
 	return false
@@ -121,13 +116,10 @@ func sample(p pt) color.RGBA {
 	}
 	t := (p.y - inset) / squareSize
 	base := lerpColor(math.Min(math.Max(t, 0), 1))
-	if paintGlyph(p) {
-		return mint
-	}
-	if dist(p, pt{348, 330}) <= 34.0 {
+	if dist(p, bow) <= dotR {
 		return token
 	}
-	if ring := dist(p, pt{402, 330}); ring <= 32.5 && ring >= 19.5 {
+	if paintGlyph(p) {
 		return mint
 	}
 	return base

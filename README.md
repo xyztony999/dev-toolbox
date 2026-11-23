@@ -1,3 +1,5 @@
+<p align="center"><img src="assets/logo.svg" width="128" alt="DevToolbox logo"></p>
+
 # DevToolbox
 
 [![CI](https://github.com/xyztony999/dev-toolbox/actions/workflows/ci.yml/badge.svg)](https://github.com/xyztony999/dev-toolbox/actions/workflows/ci.yml)
