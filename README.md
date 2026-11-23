@@ -3,8 +3,15 @@
 # DevToolbox
 
 [![CI](https://github.com/xyztony999/dev-toolbox/actions/workflows/ci.yml/badge.svg)](https://github.com/xyztony999/dev-toolbox/actions/workflows/ci.yml)
+[![Website](https://img.shields.io/badge/website-dev--toolbox.tonyxyz.com-a34b2a)](https://dev-toolbox.tonyxyz.com)
+[![Release](https://img.shields.io/github/v/release/xyztony999/dev-toolbox?display_name=tag)](https://github.com/xyztony999/dev-toolbox/releases/latest)
+[![License: MIT](https://img.shields.io/github/license/xyztony999/dev-toolbox)](./LICENSE)
+[![Go](https://img.shields.io/badge/Go-1.24+-00ADD8?logo=go&logoColor=white)](https://go.dev/)
+[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-lightgrey)](https://github.com/xyztony999/dev-toolbox/releases)
 
 **语言：** 中文 · [English](./README.en.md)
+
+官网：https://dev-toolbox.tonyxyz.com
 
 多技术栈项目的开发环境与 Git 身份管理工具箱。以项目为入口，把"这个项目用哪套运行时、哪个 Git 身份"变成一眼可见、显式确认的一键操作。
 
