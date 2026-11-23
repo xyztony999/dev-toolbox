@@ -13,27 +13,27 @@ import (
 // （子窗口先让出），拖动由标题栏按下后转入 HTCAPTION。
 
 const (
-	gwlpWndProc = ^uintptr(3) // -4
+	gwlpWndProc   = ^uintptr(3) // -4
 	htTransparent = ^uintptr(0)
 
-	wmNcCalcSize    = 0x0083
-	wmNcHitTest     = 0x0084
-	wmNcLButtonDown = 0x00A1
-	wmClose         = 0x0010
-	wmParentNotify  = 0x0210
-	htCaption       = 2
-	swMinimize      = 6
-	swMaximize      = 3
-	swRestore       = 9
-	swpNoSize       = 0x0001
-	swpNoMove       = 0x0002
-	swpNoZOrder     = 0x0004
-	swpFrameChanged = 0x0020
-	smCxFrame       = 32
+	wmNcCalcSize     = 0x0083
+	wmNcHitTest      = 0x0084
+	wmNcLButtonDown  = 0x00A1
+	wmClose          = 0x0010
+	wmParentNotify   = 0x0210
+	htCaption        = 2
+	swMinimize       = 6
+	swMaximize       = 3
+	swRestore        = 9
+	swpNoSize        = 0x0001
+	swpNoMove        = 0x0002
+	swpNoZOrder      = 0x0004
+	swpFrameChanged  = 0x0020
+	smCxFrame        = 32
 	smCxPaddedBorder = 92
-	gwChild         = 5
-	gwHwndNext      = 2
-	monitorNearest  = 2
+	gwChild          = 5
+	gwHwndNext       = 2
+	monitorNearest   = 2
 )
 
 var (

@@ -792,7 +792,7 @@ func invoke(req request) response {
 	return response{RequestID: req.RequestID, OK: true, Data: data}
 }
 
-const clientVersion = "0.1.0"
+const clientVersion = "0.1.2"
 
 func clientInfo() (map[string]string, error) {
 	base, err := os.UserConfigDir()

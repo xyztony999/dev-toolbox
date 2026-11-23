@@ -244,7 +244,7 @@ export async function mockInvoke(operation: string, payload: Record<string, unkn
       return { version: SCAN_TOOL_VERSION }
     case 'app.info':
       return {
-        version: '0.1.0',
+        version: '0.1.2',
         scanToolVersion: SCAN_TOOL_VERSION,
         configDir: 'C:/Users/demo/AppData/Roaming/DevToolbox',
         projectStore: 'C:/Users/demo/AppData/Roaming/DevToolbox/projects.json',
