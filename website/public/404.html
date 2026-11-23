@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Not found — DevToolbox</title>
+  <link rel="icon" href="/assets/logo.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+  <style>
+    .missing {
+      min-height: 70vh;
+      display: grid;
+      place-content: center;
+      text-align: center;
+      padding: 2rem 1.5rem;
+    }
+    .missing h1 {
+      margin: 0;
+      font-family: var(--font-display);
+      font-size: clamp(2rem, 6vw, 3rem);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1.2;
+    }
+    .missing p {
+      margin: 0.9rem 0 1.5rem;
+      color: var(--ink-soft);
+      line-height: 1.7;
+    }
+  </style>
+  <script>
+    (() => {
+      const theme = localStorage.getItem("dt.theme");
+      const savedLang = localStorage.getItem("dt.lang");
+      const lang = savedLang === "zh" || savedLang === "en"
+        ? savedLang
+        : ((navigator.language || "").toLowerCase().startsWith("zh") ? "zh" : "en");
+      if (theme === "light" || theme === "dark") document.documentElement.dataset.theme = theme;
+      document.documentElement.lang = lang === "zh" ? "zh-CN" : "en";
+      document.documentElement.dataset.lang = lang;
+    })();
+  </script>
+</head>
+<body>
+  <div class="grain" aria-hidden="true"></div>
+  <header class="top">
+    <a class="brand-lockup" href="/">
+      <img src="/assets/logo.svg" width="36" height="36" alt="" />
+      <span>DevToolbox</span>
+    </a>
+  </header>
+  <main class="missing">
+    <h1 data-zh="页面不存在" data-en="Page not found">页面不存在</h1>
+    <p data-zh="链接可能已失效，或地址写错了。" data-en="This link may be broken, or the address is wrong.">链接可能已失效，或地址写错了。</p>
+    <div class="cta-row center">
+      <a class="btn btn-primary" href="/" data-zh="回到首页" data-en="Back home">回到首页</a>
+    </div>
+  </main>
+  <script>
+    (() => {
+      const lang = document.documentElement.dataset.lang === "en" ? "en" : "zh";
+      document.querySelectorAll("[data-zh]").forEach((el) => {
+        const text = el.getAttribute(lang === "en" ? "data-en" : "data-zh");
+        if (text) el.textContent = text;
+      });
+      document.title = lang === "en" ? "Not found — DevToolbox" : "未找到 — DevToolbox";
+    })();
+  </script>
+</body>
+</html>

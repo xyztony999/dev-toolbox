@@ -4,6 +4,8 @@
 
 [![CI](https://github.com/xyztony999/dev-toolbox/actions/workflows/ci.yml/badge.svg)](https://github.com/xyztony999/dev-toolbox/actions/workflows/ci.yml)
 
+**语言：** 中文 · [English](./README.en.md)
+
 多技术栈项目的开发环境与 Git 身份管理工具箱。以项目为入口，把"这个项目用哪套运行时、哪个 Git 身份"变成一眼可见、显式确认的一键操作。
 
 - Go 共用业务核心：CLI 与桌面客户端调用同一应用服务。
@@ -81,12 +83,15 @@ dev-toolbox git legacy preview|import
 - 凭据 token 只经 git credential 协议进系统 helper，不落档案、不进日志、不回显。
 - 旧配置迁移先预览、备份、按来源摘要幂等导入；不抢占旧命令，不与旧工具同写旧文件。
 
+更多说明见 [安全说明](./docs/security.md) · [用户手册](./docs/handbook.md)。
+
 ## 仓库结构
 
 - `cmd/` `internal/`：CLI、桌面宿主与业务核心（project / runtimecatalog / runtimeinstall / userstate / gitidentity / desktop）。
 - `frontend/`：Vue 3 + Ant Design Vue 前端源码与构建脚本。
 - `profiles/`：ai-project-engine 工程资产——业务知识、D0–D4 设计、Gate 报告、模块状态索引。
-- `docs/`：合并方向与 D:/Project 技术栈盘点。
+- `docs/`：用户手册、安全说明、合并方向与技术栈盘点。
+- `website/`：官网（Cloudflare Workers Static Assets）。
 - `tools/`：静态盘点脚本与应用图标生成器。
 
 ## 迁移来源与致谢

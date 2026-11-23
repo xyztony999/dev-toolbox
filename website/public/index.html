@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="DevToolbox：多技术栈项目的开发环境与 Git 身份管理工具箱。" />
+  <meta name="theme-color" content="#1c1410" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#120e0c" media="(prefers-color-scheme: dark)" />
+  <meta property="og:title" content="DevToolbox" />
+  <meta property="og:description" content="项目运行时与 Git 身份，收进同一个钥匙盒。" />
+  <meta property="og:image" content="/assets/logo.svg" />
+  <title>DevToolbox</title>
+  <link rel="icon" href="/assets/logo.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+  <script>
+    (() => {
+      const theme = localStorage.getItem("dt.theme");
+      const savedLang = localStorage.getItem("dt.lang");
+      const lang = savedLang === "zh" || savedLang === "en"
+        ? savedLang
+        : ((navigator.language || "").toLowerCase().startsWith("zh") ? "zh" : "en");
+      if (theme === "light" || theme === "dark") document.documentElement.dataset.theme = theme;
+      document.documentElement.lang = lang === "zh" ? "zh-CN" : "en";
+      document.documentElement.dataset.lang = lang;
+    })();
+  </script>
+</head>
+<body>
+  <div class="grain" aria-hidden="true"></div>
+
+  <header class="top">
+    <a class="brand-lockup" href="/">
+      <img src="/assets/logo.svg" width="36" height="36" alt="" />
+      <span>DevToolbox</span>
+    </a>
+    <div class="top-actions">
+      <nav class="top-nav" aria-label="Primary">
+        <a href="#capabilities" data-i18n="nav.capabilities">能力</a>
+        <a href="#how" data-i18n="nav.how">怎么用</a>
+        <a href="https://github.com/xyztony999/dev-toolbox" rel="noopener">GitHub</a>
+      </nav>
+      <div class="control-cluster" role="group" aria-label="Preferences">
+        <button type="button" class="ctrl-btn" id="lang-toggle" aria-label="Switch language">EN</button>
+        <button type="button" class="ctrl-btn" id="theme-toggle" aria-label="Toggle theme" title="Theme">
+          <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="currentColor"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/></svg>
+          <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M19 14.5A7.5 7.5 0 0 1 9.5 5 7.6 7.6 0 0 0 5 12.2 7.8 7.8 0 0 0 12.8 20 7.6 7.6 0 0 0 19 14.5Z" fill="currentColor"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero" aria-label="Hero">
+      <div class="hero-copy">
+        <p class="eyebrow" data-i18n="hero.eyebrow">铜钥匙 · 项目入口</p>
+        <h1 class="brand-hero">DevToolbox</h1>
+        <p class="lede" data-i18n="hero.lede">把「这个项目用哪套运行时、哪个 Git 身份」收进同一个钥匙盒——可见、可确认、可撤销。</p>
+        <div class="cta-row">
+          <a class="btn btn-primary" href="https://github.com/xyztony999/dev-toolbox/releases" data-i18n="hero.download">下载 Release</a>
+          <a class="btn btn-ghost" href="https://github.com/xyztony999/dev-toolbox" data-i18n="hero.source">查看源码</a>
+        </div>
+      </div>
+      <div class="hero-stage" aria-hidden="true">
+        <div class="stage-glow"></div>
+        <div class="key-orbit">
+          <svg class="hero-key" viewBox="0 0 512 512" role="presentation">
+            <rect class="key-plate" x="40" y="40" width="432" height="432" rx="96"/>
+            <g transform="translate(56 156) scale(3.448)">
+              <mask id="hero-key-mask">
+                <rect width="116" height="58" fill="black"/>
+                <circle cx="28" cy="28" r="22" fill="white"/>
+                <rect x="42" y="21" width="62" height="14" rx="3" fill="white"/>
+                <rect x="82" y="30" width="8" height="16" rx="2" fill="white"/>
+                <rect x="96" y="30" width="8" height="20" rx="2" fill="white"/>
+                <circle cx="28" cy="28" r="10" fill="black"/>
+                <circle cx="28" cy="28" r="4" fill="white"/>
+              </mask>
+              <rect class="key-fill" width="116" height="58" mask="url(#hero-key-mask)"/>
+            </g>
+          </svg>
+        </div>
+        <ul class="float-chip chip-a"><li>Node · Java · Go · Python</li></ul>
+        <ul class="float-chip chip-b"><li data-i18n="chip.git">Git 身份全量覆盖</li></ul>
+        <ul class="float-chip chip-c"><li data-i18n="chip.path">不改父终端 PATH</li></ul>
+      </div>
+    </section>
+
+    <section id="capabilities" class="section">
+      <header class="section-head">
+        <h2 data-i18n="cap.title">三件事，一套工具</h2>
+        <p data-i18n="cap.lede">CLI、桌面客户端与托盘共用同一 Go 应用服务；前端只展示与发出结构化请求。</p>
+      </header>
+      <div class="feature-grid">
+        <article>
+          <h3 data-i18n="cap.project.title">项目上下文</h3>
+          <p data-i18n="cap.project.body">登记与扫描本机项目，识别 Git 工作树与构建模块，提取版本要求。只读，不跑项目脚本。</p>
+        </article>
+        <article>
+          <h3 data-i18n="cap.runtime.title">用户级运行时</h3>
+          <p data-i18n="cap.runtime.body">Node / Java / Maven / Gradle / Android SDK / Go / Python：发现、检查、安全安装，预览后显式确认。</p>
+        </article>
+        <article>
+          <h3 data-i18n="cap.git.title">Git 身份</h3>
+          <p data-i18n="cap.git.body">多档案全量覆盖、目录绑定、凭据不落盘；dry-run 与真跑同一算法，批量出结果。</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="how" class="section section-alt">
+      <header class="section-head">
+        <h2 data-i18n="how.title">显式动作，可预期副作用</h2>
+        <p data-i18n="how.lede">安装与切换属于明确用户动作；环境优先作用于启动的会话与子进程。</p>
+      </header>
+      <ol class="steps">
+        <li>
+          <span class="step-num">01</span>
+          <div>
+            <h3 data-i18n="how.s1.title">选中项目</h3>
+            <p data-i18n="how.s1.body">从登记列表进入，一眼看到运行时要求与当前 Git 身份。</p>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">02</span>
+          <div>
+            <h3 data-i18n="how.s2.title">预览计划</h3>
+            <p data-i18n="how.s2.body">下载、校验、目标路径与体积先列出来，再确认执行。</p>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">03</span>
+          <div>
+            <h3 data-i18n="how.s3.title">会话生效</h3>
+            <p data-i18n="how.s3.body">作用于新开的会话与子进程；不偷偷改写全局默认。</p>
+          </div>
+        </li>
+      </ol>
+    </section>
+
+    <section class="section download">
+      <header class="section-head">
+        <h2 data-i18n="dl.title">Windows 与 Linux 预构建</h2>
+        <p data-i18n="dl.lede">从 GitHub Releases 下载安装包，开箱即用。</p>
+      </header>
+      <div class="cta-row center">
+        <a class="btn btn-primary" href="https://github.com/xyztony999/dev-toolbox/releases/latest" data-i18n="dl.get">获取最新版本</a>
+        <a class="btn btn-ghost" href="https://github.com/xyztony999/dev-toolbox#readme" data-i18n="dl.readme">阅读 README</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <div class="brand-lockup">
+      <img src="/assets/logo.svg" width="28" height="28" alt="" />
+      <span>DevToolbox</span>
+    </div>
+    <p data-i18n-html="foot.copy">开源 · MIT · <a href="https://github.com/xyztony999/dev-toolbox">xyztony999/dev-toolbox</a></p>
+  </footer>
+
+  <script src="/main.js" defer></script>
+</body>
+</html>

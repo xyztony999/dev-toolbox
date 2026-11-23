@@ -1,0 +1,14 @@
+{
+  "name": "dev-toolbox-website",
+  "private": true,
+  "version": "0.1.0",
+  "description": "DevToolbox marketing site on Cloudflare Workers Static Assets",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "preview": "wrangler versions upload"
+  },
+  "devDependencies": {
+    "wrangler": "^4.166.0"
+  }
+}
