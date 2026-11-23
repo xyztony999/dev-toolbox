@@ -13,5 +13,6 @@
 - 自动化：`go test ./...` 全绿；toolconfig 6 例（maven upsert 保留用户 mirror+备份+幂等、remove、dryRun 不写、confirm 强制、只读守卫×4、golang 委托）；`vue-tsc` 通过；`build:desktop`+gui 构建通过。
 - 桥接：新增 runtime.toolConfigRead/toolConfigWrite；移除被取代的 runtime.goEnvRead/goEnvSet（白名单收紧）。
 - 前端：合并「全局默认」+「Go 管理」为单「运行时」tab，a-collapse 每工具分区（版本管理+环境配置）；默认/卸载/注销泛化到全部工具。
-- 真机（锁屏，AX 树验证）：合并 tab 渲染 8 个工具分区；golang 区 GOPROXY(https://goproxy.cn,direct)/GOPATH/GOBIN 可编辑+预设、GOROOT 只读；python/node/maven/java/androidsdk 版本行与默认标记正确；无安装工具显示引导空态。
-- 未覆盖：锁屏无像素截图；node/python/maven 的真实写路径未在本机执行（避免改用户 ~/.npmrc/pip/settings），由单测+dryRun 契约覆盖，解锁后建议人工点一次预览。
+- 真机：解锁后像素截图自查通过——单「运行时」tab、每工具折叠头（工具名+默认摘要）、展开即加载配置（java 显示 JAVA_HOME 只读 chip+杠杆说明；golang 可编辑 GOPROXY/GOPATH/GOBIN+预设、GOROOT 只读）；无安装工具显示引导空态。
+- 自查发现并修复：误用未注册组件 `a-collapse-pane`（正确为 `a-collapse-panel`），曾导致分区平铺、配置不加载（e76127e）。
+- 未覆盖：node/python/maven 的真实写路径未在本机执行（避免改用户 ~/.npmrc/pip/settings），由单测+dryRun 契约覆盖；建议人工点一次预览确认。
