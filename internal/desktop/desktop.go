@@ -16,11 +16,11 @@ import (
 	"time"
 
 	"dev-toolbox/internal/gitidentity"
-	"dev-toolbox/internal/goenv"
 	"dev-toolbox/internal/project"
 	"dev-toolbox/internal/runtimecatalog"
 	"dev-toolbox/internal/runtimeinstall"
 	"dev-toolbox/internal/session"
+	"dev-toolbox/internal/toolconfig"
 	"dev-toolbox/internal/userstate"
 	webview "github.com/webview/webview_go"
 )
@@ -264,10 +264,16 @@ func invoke(req request) response {
 		if err = decode(req.Payload, &p); err == nil {
 			data, err = userstate.SetGlobalDefault(p.Runtime, p.InstallationID, p.Revision, p.Confirm)
 		}
-	case "runtime.goEnvRead":
-		data, err = goenv.Read(ctx)
-	case "runtime.goEnvSet":
+	case "runtime.toolConfigRead":
 		var p struct {
+			Tool string `json:"tool"`
+		}
+		if err = decode(req.Payload, &p); err == nil {
+			data, err = toolconfig.Read(ctx, p.Tool)
+		}
+	case "runtime.toolConfigWrite":
+		var p struct {
+			Tool    string `json:"tool"`
 			Key     string `json:"key"`
 			Value   string `json:"value"`
 			Unset   bool   `json:"unset"`
@@ -275,7 +281,7 @@ func invoke(req request) response {
 			Confirm bool   `json:"confirm"`
 		}
 		if err = decode(req.Payload, &p); err == nil {
-			data, err = goenv.Set(ctx, p.Key, p.Value, p.Unset, p.DryRun, p.Confirm)
+			data, err = toolconfig.Set(ctx, p.Tool, p.Key, p.Value, p.Unset, p.DryRun, p.Confirm)
 		}
 	case "runtime.removeInstallation":
 		var p struct {

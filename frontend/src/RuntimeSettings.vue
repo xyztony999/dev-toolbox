@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref, watch } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { message, Modal } from 'ant-design-vue'
 import { invoke } from './bridge'
 import RuntimeInstall from './RuntimeInstall.vue'
 
-interface GoEnvReport { goBinary: string; goVersion: string; envFile: string; values: Record<string, string>; editable: string[]; presets: Array<{ id: string; label: string; value: string }> }
 interface GoEnvChange { key: string; from: string; to: string; action: 'set' | 'unset' }
-interface GoEnvSetResult { change: GoEnvChange; report: GoEnvReport }
+interface ToolConfigItem { key: string; label: string; value: string; editable: boolean; source: string; presets?: Array<{ id: string; label: string; value: string }>; note?: string }
+interface ToolConfigReport { tool: string; binary?: string; items: ToolConfigItem[]; note?: string }
+interface ToolConfigSetResult { change: GoEnvChange; report: ToolConfigReport }
 interface RemovePreview { id: string; runtime: string; version: string; source: string; localHome: string; ownedByProduct: boolean; willDeleteDir: boolean; isDefault: boolean }
 interface RemoveResult { preview: RemovePreview; state: UserState; removed: boolean; dirDeleted: boolean; wasDefault: boolean }
 
@@ -19,7 +20,7 @@ interface RuntimeCandidate { candidateId: string; digest: string; tool: string; 
 interface DiscoveryResult { status: string; candidates: RuntimeCandidate[]; issues: Array<{path: string; code: string; message: string}> }
 interface RegistrationResult { state: UserState; counts: {created: number; linked: number; skipped: number} }
 
-const tab = ref('defaults')
+const tab = ref('tools')
 const state = ref<UserState>()
 const inspection = ref<LegacyInspection>()
 const preview = ref<LegacyPreview>()
@@ -138,107 +139,109 @@ function registerCandidates() {
   })
 }
 
-// ---- Go 管理 ----
-const goEnv = ref<GoEnvReport>()
-const goBusy = ref(false)
-const goError = ref('')
-const goEdits = reactive<Record<string, string>>({})
-const goPreview = reactive<Record<string, GoEnvChange | undefined>>({})
-const goInstallations = ref<Installation[]>([])
+// ---- 运行时统一管理：默认版本 / 版本管理 / 环境配置 ----
+const TOOLS = ['node', 'java', 'maven', 'gradle', 'androidsdk', 'golang', 'python', 'rust']
+const toolConfigs = reactive<Record<string, ToolConfigReport | undefined>>({})
+const toolEdits = reactive<Record<string, Record<string, string>>>({})
+const toolPreviews = reactive<Record<string, GoEnvChange | undefined>>({})
+const activeTools = ref<string[]>(['golang'])
 
-const goReadonlyKeys = ['GOROOT', 'GOMODCACHE', 'GOOS', 'GOARCH']
-
-async function loadGo() {
-  goBusy.value = true
-  goError.value = ''
+async function loadToolConfig(tool: string) {
   try {
-    const [report, st] = await Promise.all([
-      invoke<GoEnvReport>('runtime.goEnvRead'),
-      invoke<UserState>('runtime.getUserState'),
-    ])
-    goEnv.value = report
-    for (const key of report.editable) goEdits[key] = report.values[key] ?? ''
-    goInstallations.value = st.installations.filter((item) => item.runtime === 'golang')
-    state.value = st
+    const report = await invoke<ToolConfigReport>('runtime.toolConfigRead', { tool })
+    toolConfigs[tool] = report
+    const edits: Record<string, string> = {}
+    for (const item of report.items) if (item.editable) edits[item.key] = item.value
+    toolEdits[tool] = edits
   } catch (error) {
-    goError.value = error instanceof Error ? error.message : String(error)
-  } finally { goBusy.value = false }
+    toolConfigs[tool] = { tool, items: [], note: error instanceof Error ? error.message : String(error) }
+  }
 }
 
-watch(tab, (value) => { if (value === 'go') void loadGo() })
+function onCollapseChange(keys: unknown) {
+  const list = Array.isArray(keys) ? (keys as string[]) : [keys as string]
+  activeTools.value = list
+  for (const tool of list) if (!toolConfigs[tool]) void loadToolConfig(tool)
+}
 
-async function previewGoSet(key: string) {
-  goBusy.value = true
-  goError.value = ''
+async function previewToolSet(tool: string, key: string) {
+  busy.value = true
+  errorText.value = ''
   try {
-    const res = await invoke<GoEnvSetResult>('runtime.goEnvSet', { key, value: goEdits[key] ?? '', dryRun: true })
-    goPreview[key] = res.change
-  } catch (error) { goError.value = error instanceof Error ? error.message : String(error) }
-  finally { goBusy.value = false }
+    const res = await invoke<ToolConfigSetResult>('runtime.toolConfigWrite', { tool, key, value: toolEdits[tool]?.[key] ?? '', dryRun: true })
+    toolPreviews[`${tool}/${key}`] = res.change
+  } catch (error) { errorText.value = error instanceof Error ? error.message : String(error) }
+  finally { busy.value = false }
 }
 
-function applyGoSet(key: string, unset: boolean) {
+function applyToolSet(tool: string, key: string, unset: boolean) {
+  const target = toolConfigs[tool]?.items.find((item) => item.key === key)
   Modal.confirm({
-    title: unset ? `恢复 ${key} 为 go 默认？` : `写入 ${key}？`,
+    title: unset ? `恢复 ${key} 为工具默认？` : `写入 ${key}？`,
     content: unset
-      ? '执行 go env -u，只影响本机 go 的用户配置，不改系统环境。'
-      : `执行 go env -w ${key}=${goEdits[key] ?? ''}。只写 go 用户配置（GOENV），不改系统 PATH/注册表。`,
+      ? `清除该用户级配置，恢复 ${tool} 自身默认。不改系统环境。`
+      : `写入 ${tool} 的用户级配置（${target?.source ?? ''}）：${key}=${toolEdits[tool]?.[key] ?? ''}。不改系统 PATH/注册表。`,
     okText: unset ? '恢复默认' : '应用', cancelText: '取消',
     onOk: async () => {
-      goBusy.value = true
+      busy.value = true
       try {
-        const res = await invoke<GoEnvSetResult>('runtime.goEnvSet', { key, value: goEdits[key] ?? '', unset, confirm: true })
-        goEnv.value = res.report
-        goEdits[key] = res.report.values[key] ?? ''
-        goPreview[key] = undefined
+        await invoke<ToolConfigSetResult>('runtime.toolConfigWrite', { tool, key, value: toolEdits[tool]?.[key] ?? '', unset, confirm: true })
+        toolPreviews[`${tool}/${key}`] = undefined
         message.success(unset ? `${key} 已恢复默认` : `${key} 已应用`)
-      } catch (error) { goError.value = error instanceof Error ? error.message : String(error) }
-      finally { goBusy.value = false }
+        await loadToolConfig(tool)
+      } catch (error) { errorText.value = error instanceof Error ? error.message : String(error) }
+      finally { busy.value = false }
     },
   })
 }
 
-function applyGoPreset(key: string, value: string) {
-  goEdits[key] = value
-  goPreview[key] = undefined
+function applyPreset(tool: string, key: string, value: string) {
+  if (!toolEdits[tool]) toolEdits[tool] = {}
+  toolEdits[tool][key] = value
+  toolPreviews[`${tool}/${key}`] = undefined
 }
 
-async function removeGo(inst: Installation) {
+function installationsOf(tool: string): Installation[] {
+  return state.value?.installations.filter((item) => item.runtime === tool) ?? []
+}
+
+function isDefault(tool: string, inst: Installation): boolean {
+  return state.value?.globalSelections[tool]?.installationId === inst.id
+}
+
+async function removeInstallation(inst: Installation) {
   if (!state.value) return
-  goBusy.value = true
-  goError.value = ''
+  busy.value = true
+  errorText.value = ''
   try {
     const dry = await invoke<RemoveResult>('runtime.removeInstallation', {
       id: inst.id, expectedRevision: state.value.revision, deleteFiles: inst.source === 'downloaded', dryRun: true,
     })
     const p = dry.preview
     Modal.confirm({
-      title: p.willDeleteDir ? `卸载 Go ${inst.version}？` : `注销 Go ${inst.version} 的登记？`,
+      title: p.willDeleteDir ? `卸载 ${inst.runtime} ${inst.version}？` : `注销 ${inst.runtime} ${inst.version} 的登记？`,
       content: (p.willDeleteDir
         ? `将删除产品自有目录 ${p.localHome} 并移除记录。`
         : `仅移除登记记录，不删除外部目录 ${p.localHome}。`)
         + (p.isDefault ? ' 它当前是全局默认，将一并清除。' : ''),
       okText: p.willDeleteDir ? '卸载' : '注销', okButtonProps: { danger: true }, cancelText: '取消',
       onOk: async () => {
-        goBusy.value = true
+        busy.value = true
         try {
           const res = await invoke<RemoveResult>('runtime.removeInstallation', {
             id: inst.id, expectedRevision: state.value!.revision, deleteFiles: inst.source === 'downloaded', confirm: true,
           })
           state.value = res.state
-          goInstallations.value = res.state.installations.filter((item) => item.runtime === 'golang')
           message.success(res.dirDeleted ? '已卸载并删除目录' : '已注销登记')
-        } catch (error) { goError.value = error instanceof Error ? error.message : String(error) }
-        finally { goBusy.value = false }
+        } catch (error) { errorText.value = error instanceof Error ? error.message : String(error) }
+        finally { busy.value = false }
       },
     })
-  } catch (error) { goError.value = error instanceof Error ? error.message : String(error) }
-  finally { goBusy.value = false }
+  } catch (error) { errorText.value = error instanceof Error ? error.message : String(error) }
+  finally { busy.value = false }
 }
 
-function isGoDefault(inst: Installation): boolean {
-  return state.value?.globalSelections['golang']?.installationId === inst.id
-}
+onMounted(() => { void loadToolConfig('golang') })
 
 function selectedLabel(runtime: string): string {
   const selection = state.value?.globalSelections[runtime]
@@ -255,53 +258,50 @@ onMounted(reload)
   <a-alert v-if="errorText" type="error" show-icon closable :message="errorText" class="page-alert" />
   <a-tabs v-model:activeKey="tab" class="settings-tabs">
 
-    <a-tab-pane key="defaults" tab="全局默认">
+    <a-tab-pane key="tools" tab="运行时">
       <div class="group-actions"><a-button :loading="busy" @click="reload">刷新</a-button></div>
-      <a-empty v-if="!state?.installations.length" description="尚无已登记运行时；可在「获取运行时」下载，或「导入」迁移 DevSwitch 用户状态。" />
-      <div v-for="tool in ['node', 'java', 'maven', 'gradle', 'androidsdk', 'golang', 'python', 'rust']" :key="tool" class="runtime-pref-row">
-        <div><strong>{{ tool }}</strong><small>{{ selectedLabel(tool) }}</small></div>
-        <a-space wrap>
-          <a-button v-for="item in state?.installations.filter((entry) => entry.runtime === tool) ?? []" :key="item.id" size="small" :disabled="!item.available || state?.globalSelections[tool]?.installationId === item.id" @click="setDefault(tool, item.id)">
-            设为默认 {{ item.version || item.label || item.localHome }}
-          </a-button>
-        </a-space>
-      </div>
-    </a-tab-pane>
+      <a-collapse v-model:activeKey="activeTools" class="tool-collapse" @change="onCollapseChange">
+        <a-collapse-pane v-for="tool in TOOLS" :key="tool" :header="tool">
+          <template #extra><span class="collapse-extra">{{ selectedLabel(tool) }}</span></template>
 
-    <a-tab-pane key="go" tab="Go 管理">
-      <a-alert v-if="goError" type="error" show-icon closable :message="goError" class="page-alert" @close="goError = ''" />
-      <div class="group-actions"><a-button :loading="goBusy" @click="loadGo">刷新</a-button></div>
-      <template v-if="goEnv">
-        <div class="group-label">Go 环境配置</div>
-        <div class="source-box"><span>go</span><code>{{ goEnv.goBinary }}</code><a-tag>{{ goEnv.goVersion }}</a-tag><small>用户配置 {{ goEnv.envFile }}</small></div>
-        <div class="go-readonly">
-          <span v-for="key in goReadonlyKeys" :key="key" class="go-chip"><em>{{ key }}</em>{{ goEnv.values[key] || '—' }}</span>
-        </div>
-        <div v-for="key in goEnv.editable" :key="key" class="go-edit-row">
-          <div class="go-edit-head"><strong>{{ key }}</strong><small>当前 {{ goEnv.values[key] || '未设置' }}</small></div>
-          <div class="toolbar">
-            <a-input v-model:value="goEdits[key]" class="grow" :placeholder="key" @change="goPreview[key] = undefined" />
-            <a-select v-if="key === 'GOPROXY'" style="width: 190px" placeholder="代理预设" :options="goEnv.presets.map((p) => ({ label: p.label, value: p.value }))" @change="(value: unknown) => applyGoPreset(key, String(value))" />
-            <a-button :loading="goBusy" @click="previewGoSet(key)">预览</a-button>
-            <a-button type="primary" :loading="goBusy" @click="applyGoSet(key, false)">应用</a-button>
-            <a-button :loading="goBusy" :disabled="!goEnv.values[key]" @click="applyGoSet(key, true)">恢复默认</a-button>
+          <div class="group-label">版本管理</div>
+          <a-empty v-if="!installationsOf(tool).length" :description="`尚无 ${tool} 安装记录；可在「获取运行时」下载或「发现与登记」登记。`" />
+          <div v-for="inst in installationsOf(tool)" :key="inst.id" class="runtime-pref-row">
+            <div><strong>{{ tool }} {{ inst.version || inst.label || '版本未知' }}</strong><small>{{ inst.localHome }}</small></div>
+            <a-space wrap>
+              <a-tag :color="inst.source === 'downloaded' ? 'blue' : 'default'">{{ inst.source === 'downloaded' ? '已下载' : '已登记' }}</a-tag>
+              <a-tag v-if="isDefault(tool, inst)" color="green">全局默认</a-tag>
+              <a-button size="small" :disabled="isDefault(tool, inst) || !inst.available" :loading="busy" @click="setDefault(tool, inst.id)">设为默认</a-button>
+              <a-button size="small" danger :loading="busy" @click="removeInstallation(inst)">{{ inst.source === 'downloaded' ? '卸载' : '注销' }}</a-button>
+            </a-space>
           </div>
-          <div v-if="goPreview[key]" class="go-preview"><code>{{ goPreview[key]?.from || '未设置' }}</code><span>→</span><code>{{ goPreview[key]?.to || '（清除）' }}</code></div>
-        </div>
-      </template>
-      <a-empty v-else-if="!goBusy" description="未找到 go。请先在「获取运行时」安装，或「发现与登记」登记一个 Go。" />
-      <a-divider />
-      <div class="group-label">Go 版本管理</div>
-      <a-empty v-if="!goInstallations.length" description="尚无 Go 安装记录；可在「获取运行时」下载或「发现与登记」登记。" />
-      <div v-for="inst in goInstallations" :key="inst.id" class="runtime-pref-row">
-        <div><strong>Go {{ inst.version || inst.label || '版本未知' }}</strong><small>{{ inst.localHome }}</small></div>
-        <a-space wrap>
-          <a-tag :color="inst.source === 'downloaded' ? 'blue' : 'default'">{{ inst.source === 'downloaded' ? '已下载' : '已登记' }}</a-tag>
-          <a-tag v-if="isGoDefault(inst)" color="green">全局默认</a-tag>
-          <a-button size="small" :disabled="isGoDefault(inst) || !inst.available" @click="setDefault('golang', inst.id)">设为默认</a-button>
-          <a-button size="small" danger @click="removeGo(inst)">{{ inst.source === 'downloaded' ? '卸载' : '注销' }}</a-button>
-        </a-space>
-      </div>
+
+          <div class="group-label">环境配置</div>
+          <template v-if="toolConfigs[tool]">
+            <a-alert v-if="toolConfigs[tool]?.note" type="info" show-icon :message="toolConfigs[tool]?.note" class="page-alert" />
+            <a-empty v-if="!toolConfigs[tool]?.items.length && !toolConfigs[tool]?.note" description="该工具暂无可管理的环境配置" />
+            <div v-for="item in toolConfigs[tool]?.items ?? []" :key="item.key" class="go-edit-row">
+              <template v-if="item.editable">
+                <div class="go-edit-head"><strong>{{ item.label }}</strong><small>当前 {{ item.value || '未设置' }} · {{ item.source }}</small></div>
+                <div class="toolbar">
+                  <a-input v-model:value="toolEdits[tool][item.key]" class="grow" :placeholder="item.label" @change="toolPreviews[tool + '/' + item.key] = undefined" />
+                  <a-select v-if="item.presets?.length" style="width: 190px" placeholder="预设" :options="item.presets.map((p) => ({ label: p.label, value: p.value }))" @change="(value: unknown) => applyPreset(tool, item.key, String(value))" />
+                  <a-button :loading="busy" @click="previewToolSet(tool, item.key)">预览</a-button>
+                  <a-button type="primary" :loading="busy" @click="applyToolSet(tool, item.key, false)">应用</a-button>
+                  <a-button :loading="busy" :disabled="!item.value" @click="applyToolSet(tool, item.key, true)">恢复默认</a-button>
+                </div>
+                <div v-if="toolPreviews[tool + '/' + item.key]" class="go-preview"><code>{{ toolPreviews[tool + '/' + item.key]?.from || '未设置' }}</code><span>→</span><code>{{ toolPreviews[tool + '/' + item.key]?.to || '（清除）' }}</code></div>
+                <p v-if="item.note" class="muted">{{ item.note }}</p>
+              </template>
+              <template v-else>
+                <div class="go-readonly"><span class="go-chip"><em>{{ item.label }}</em>{{ item.value || '—' }}</span></div>
+                <p v-if="item.note" class="muted">{{ item.note }}</p>
+              </template>
+            </div>
+          </template>
+          <a-skeleton v-else active :paragraph="{ rows: 2 }" />
+        </a-collapse-pane>
+      </a-collapse>
     </a-tab-pane>
 
     <a-tab-pane key="install" tab="获取运行时">
@@ -372,5 +372,10 @@ onMounted(reload)
 .go-edit-head small{color:var(--text-muted);overflow-wrap:anywhere}
 .go-preview{display:flex;align-items:center;gap:8px;margin-top:8px;color:var(--text-muted);font-size:12.5px}
 .go-preview code{color:var(--text-code);overflow-wrap:anywhere}
-.go-preview span{color:var(--text-muted)}@media(max-width:640px){.runtime-pref-row{align-items:flex-start;flex-direction:column}.candidate-row{align-items:flex-start}}
+.go-preview span{color:var(--text-muted)}
+.tool-collapse{background:transparent;border:0}
+.tool-collapse :deep(.ant-collapse-item){border-bottom:1px solid var(--border-soft)}
+.tool-collapse :deep(.ant-collapse-header){align-items:center}
+.collapse-extra{color:var(--text-muted);font-size:12px}
+.tool-collapse .group-label{margin-top:4px}@media(max-width:640px){.runtime-pref-row{align-items:flex-start;flex-direction:column}.candidate-row{align-items:flex-start}}
 </style>

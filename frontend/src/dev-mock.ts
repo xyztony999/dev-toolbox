@@ -208,6 +208,34 @@ function demoGoReport() {
   }
 }
 
+type DemoConfigItem = { key: string; label: string; value: string; editable: boolean; source: string; presets?: Array<{ id: string; label: string; value: string }>; note?: string }
+const demoToolConfigs: Record<string, { binary?: string; note?: string; items: DemoConfigItem[] }> = {
+  golang: {
+    binary: 'C:/Users/demo/go-1.27.3/bin/go.exe',
+    items: [
+      { key: 'GOPROXY', label: 'GOPROXY', value: demoGoValues.GOPROXY, editable: true, source: 'go env', presets: demoGoReport().presets },
+      { key: 'GOPATH', label: 'GOPATH', value: demoGoValues.GOPATH, editable: true, source: 'go env' },
+      { key: 'GOBIN', label: 'GOBIN', value: '', editable: true, source: 'go env' },
+      { key: 'GOROOT', label: 'GOROOT', value: demoGoValues.GOROOT, editable: false, source: 'go env（只读）' },
+    ],
+  },
+  node: {
+    binary: 'C:/demo/node/npm.cmd',
+    items: [{ key: 'registry', label: 'npm registry', value: 'https://registry.npmjs.org/', editable: true, source: 'npm config（~/.npmrc）', presets: [{ id: 'npmjs', label: '官方 registry.npmjs.org', value: 'https://registry.npmjs.org/' }, { id: 'npmmirror', label: 'npmmirror（国内）', value: 'https://registry.npmmirror.com/' }] }],
+  },
+  python: {
+    binary: 'C:/Users/demo/python/python.exe',
+    items: [{ key: 'global.index-url', label: 'pip index-url', value: '', editable: true, source: 'pip config（用户级）', presets: [{ id: 'pypi', label: '官方 pypi.org', value: 'https://pypi.org/simple' }, { id: 'tsinghua', label: '清华 TUNA', value: 'https://pypi.tuna.tsinghua.edu.cn/simple' }, { id: 'aliyun', label: '阿里云镜像', value: 'https://mirrors.aliyun.com/pypi/simple/' }] }],
+  },
+  maven: {
+    items: [{ key: 'mirror.url', label: '中央仓库镜像', value: '', editable: true, source: '~/.m2/settings.xml（托管 id=dev-toolbox）', presets: [{ id: 'aliyun', label: '阿里云镜像', value: 'https://maven.aliyun.com/repository/public' }, { id: 'tencent', label: '腾讯云镜像', value: 'https://mirrors.cloud.tencent.com/nexus/repository/maven-public/' }], note: '仅托管 id=dev-toolbox 的 mirror；写入前备份 settings.xml。' }],
+  },
+  java: { items: [{ key: 'JAVA_HOME', label: 'JAVA_HOME', value: 'D:/Tools/jdk-21', editable: false, source: '只读（默认安装推导）', note: '切换默认版本即改变；会话注入以此为准。' }] },
+  androidsdk: { items: [{ key: 'ANDROID_HOME', label: 'ANDROID_HOME', value: 'E:/Android/Sdk', editable: false, source: '进程环境 ANDROID_HOME', note: '产品不写系统环境变量。' }] },
+  gradle: { items: [{ key: 'GRADLE_USER_HOME', label: 'GRADLE_USER_HOME', value: 'C:/Users/demo/.gradle', editable: false, source: '只读（默认 ~/.gradle）', note: 'Gradle 无安全的全局镜像开关。' }] },
+  rust: { items: [{ key: 'cargo.mirror', label: 'cargo 镜像（replace-with）', value: '', editable: false, source: '~/.cargo/config.toml（只读）', note: 'cargo 镜像需手工编辑 config.toml 的 [source] 段。' }] },
+}
+
 export async function mockInvoke(operation: string, payload: Record<string, unknown>): Promise<unknown> {
   switch (operation) {
     case 'project.list':
@@ -310,16 +338,25 @@ export async function mockInvoke(operation: string, payload: Record<string, unkn
       userRuntimeState.revision += 1
       return copy(userRuntimeState)
     }
-    case 'runtime.goEnvRead':
-      return copy(demoGoReport())
-    case 'runtime.goEnvSet': {
+    case 'runtime.toolConfigRead': {
+      const tool = String(payload.tool ?? '')
+      const cfg = demoToolConfigs[tool]
+      if (!cfg) return { tool, items: [], note: '该工具暂无可管理的环境配置' }
+      return { tool, binary: cfg.binary, items: copy(cfg.items), note: cfg.note }
+    }
+    case 'runtime.toolConfigWrite': {
+      const tool = String(payload.tool ?? '')
       const key = String(payload.key ?? '')
-      if (!['GOPROXY', 'GOPATH', 'GOBIN'].includes(key)) throw new Error('GO_ENV_KEY_NOT_EDITABLE')
+      const item = demoToolConfigs[tool]?.items.find((entry) => entry.key === key)
+      if (!item?.editable) throw new Error('TOOL_CONFIG_KEY_NOT_EDITABLE')
       if (!payload.dryRun && !payload.confirm) throw new Error('CONFIRMATION_REQUIRED')
-      const from = demoGoValues[key] ?? ''
+      const from = item.value
       const to = payload.unset ? '' : String(payload.value ?? '')
-      if (!payload.dryRun) demoGoValues[key] = to
-      return { change: { key, from, to, action: payload.unset ? 'unset' : 'set' }, report: copy(demoGoReport()) }
+      if (!payload.dryRun) item.value = to
+      return {
+        change: { key, from, to, action: payload.unset ? 'unset' : 'set' },
+        report: { tool, binary: demoToolConfigs[tool]?.binary, items: copy(demoToolConfigs[tool]?.items ?? []) },
+      }
     }
     case 'runtime.removeInstallation': {
       if (Number(payload.expectedRevision) !== userRuntimeState.revision) throw new Error('USER_RUNTIME_REVISION_CONFLICT')

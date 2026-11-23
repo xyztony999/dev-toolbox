@@ -105,6 +105,19 @@ modules:
     gates:
       gate1: {status: pass, note: 2026-11-23 go-management D0-D4 PASS；详见 gate1-go-management-2026-11-23.md}
       gate2: {status: pass, note: 2026-11-23 自动化全绿+Windows 真机；发现并修复 GUI 派生控制台子进程锁屏挂起（CREATE_NO_WINDOW）}
+  - name: runtime-tool-config
+    title: 运行时统一管理（合并全局默认+Go 管理，配置面泛化到全工具）
+    domain: runtime
+    stages:
+      requirement: {status: complete, note: D0 澄清：合并 tab；配置面按工具原生事实源分级（可写/只读）；版本管理泛化}
+      api: {status: complete, note: D3 runtime.toolConfigRead/Write；goenv 委托；maven 托管 mirror；移除 goEnv 桥接 op}
+      interaction: {status: complete, note: D4 单「运行时」tab，a-collapse 每工具分区（版本管理+环境配置）PageSpec v1.0}
+      backend: {status: complete, note: internal/toolconfig（go/node/npm/python/pip/maven settings 可写；java/android/gradle/rust 只读）+ CREATE_NO_WINDOW；6 测试全绿}
+      frontend: {status: complete, note: 合并 tab；默认/卸载/注销泛化全工具；dev-mock toolConfig 契约}
+      validation: {status: complete, note: Gate2 PASS——自动化全绿+真机 AX 验证 8 工具分区；锁屏无像素截图（见报告）}
+    gates:
+      gate1: {status: pass, note: 2026-11-23 设计门控 PASS；详见 runtime-tool-config-gates-2026-11-23.md}
+      gate2: {status: pass, note: 2026-11-23 交付门控 PASS；详见 runtime-tool-config-gates-2026-11-23.md}
   - name: git-remote-management
     title: 仓库 Git Remote 全生命周期管理
     domain: git
