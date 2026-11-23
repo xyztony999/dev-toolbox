@@ -240,7 +240,7 @@ const scanOutdated = computed(() =>
         <a-menu-item key="git-identity" @click="view = 'git'">
           <span class="menu-line"><span class="menu-icon"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="#80e0c0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.6"/><circle cx="6" cy="18" r="2.6"/><circle cx="18" cy="8" r="2.6"/><path d="M6 8.6v6.8"/><path d="M18 10.6a8 8 0 0 1-8 7.4"/></g></svg></span>
           <span class="menu-text"><span class="menu-project">Git 身份</span>
-          <span class="menu-meta">档案、目录绑定与仓库审计</span></span></span>
+          <span class="menu-meta">档案、生效范围与仓库审计</span></span></span>
         </a-menu-item>
       </a-menu>
       <template v-if="projects.length">

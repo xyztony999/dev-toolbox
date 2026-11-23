@@ -344,16 +344,20 @@ export async function mockInvoke(operation: string, payload: Record<string, unkn
     case 'git.applyProfile': {
       if (!payload.dryRun && !payload.confirm) throw new Error('CONFIRMATION_REQUIRED')
       const scope = payload.scope === 'global' ? 'global' : 'repos'
-      const target = scope === 'global' ? 'global' : String((payload.repos as string[])?.[0] ?? '.')
-      return [{
-        target, status: payload.dryRun ? 'skipped' : 'success',
-        changes: [
-          { action: 'set', key: 'user.name', scope, to: '张三' },
-          { action: 'set', key: 'user.email', scope, to: 'z@corp.com' },
-          { action: 'unset', key: 'gpg.format', scope },
-        ],
-      }]
+      const changes = [
+        { action: 'set', key: 'user.name', scope, from: 'Xinyi Zhang <42613048+xyztony999@users.noreply.github.com>', to: '张三' },
+        { action: 'set', key: 'user.email', scope, from: '42613048+xyztony999@users.noreply.github.com', to: 'z@corp.com' },
+        { action: 'unset', key: 'user.signingkey', scope, from: '65A1285037EA924A' },
+      ]
+      // 与真实桥接同构：全局返回 {scope, changes}，仓库返回逐仓结果数组。
+      if (scope === 'global') return { scope: 'global', changes }
+      const repos = ((payload.repos as string[]) ?? []).filter(Boolean)
+      return (repos.length ? repos : ['.']).map((target) => ({
+        target, status: payload.dryRun ? 'skipped' : 'success', changes,
+      }))
     }
+    case 'app.pickFolder':
+      return 'D:/Project/demo-repo'
     case 'git.effectiveIdentity':
       return {
         path: String(payload.path ?? '.'), repoRoot: String(payload.path ?? '.'), resolved: 'work', profileId: 'work',

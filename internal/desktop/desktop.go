@@ -383,10 +383,18 @@ func invoke(req request) response {
 		}
 		if err = decode(req.Payload, &p); err == nil {
 			if p.DryRun {
-				if p.Scope == "local" && len(p.Repos) == 0 {
-					p.Repos = []string{"."}
+				if p.Scope == "global" {
+					// 全局预览走与全局应用相同的入口与返回结构，前端无需
+					// 区分两种预览形态（此前一律落到仓库路径，全局预览恒为空）。
+					var changes []gitidentity.ConfigChange
+					changes, err = gitidentity.ApplyProfile(ctx, gitStore(), p.ID, "global", "", true)
+					data = map[string]any{"scope": "global", "changes": changes}
+				} else {
+					if p.Scope == "local" && len(p.Repos) == 0 {
+						p.Repos = []string{"."}
+					}
+					data = gitidentity.ApplyToRepos(ctx, gitStore(), p.ID, p.Repos, true)
 				}
-				data = gitidentity.ApplyToRepos(ctx, gitStore(), p.ID, p.Repos, true)
 			} else if !p.Confirm {
 				err = errors.New("CONFIRMATION_REQUIRED")
 			} else if p.Scope == "global" {

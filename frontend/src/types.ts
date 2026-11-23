@@ -196,15 +196,22 @@ export interface GitConfigChange {
   key: string
   scope: string
   target?: string
-  from?: string
-  to?: string
+  /** 后端为 *string：未设置时是 null，键存在但为空时是空串 */
+  from?: string | null
+  to?: string | null
 }
 
 export interface GitApplyTargetResult {
   target: string
-  status: 'success' | 'failed' | 'skipped'
+  status: 'success' | 'failed' | 'skipped' // skipped = 预检通过（dryRun 未写入）
   changes?: GitConfigChange[]
   error?: string
+}
+
+/** git.applyProfile 在 scope=global 时（预览与应用同构）的返回 */
+export interface GitGlobalApplyResult {
+  scope: 'global'
+  changes: GitConfigChange[] | null
 }
 
 export interface GitKeyOrigin {
@@ -238,9 +245,18 @@ export interface GitDoctorFinding {
   detail: string
 }
 
+export interface GitDoctorBinding {
+  profileId: string
+  dir: string
+  dirExists: boolean
+  snippetOk: boolean
+  snippetMissing?: boolean
+  drift?: GitSnippetDrift
+}
+
 export interface GitDoctorReport {
   findings: GitDoctorFinding[]
-  bindings: Array<{ profileId: string; dir: string; dirExists: boolean; snippetOk: boolean; drift?: GitSnippetDrift }>
+  bindings: GitDoctorBinding[]
   orphanSnippets: string[]
   hookPresent: boolean
 }
