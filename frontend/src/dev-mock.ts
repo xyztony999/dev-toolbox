@@ -242,6 +242,19 @@ export async function mockInvoke(operation: string, payload: Record<string, unkn
       return copy(projects)
     case 'project.scanToolVersion':
       return { version: SCAN_TOOL_VERSION }
+    case 'app.info':
+      return {
+        version: '0.1.0',
+        scanToolVersion: SCAN_TOOL_VERSION,
+        configDir: 'C:/Users/demo/AppData/Roaming/DevToolbox',
+        projectStore: 'C:/Users/demo/AppData/Roaming/DevToolbox/projects.json',
+        runtimeState: 'C:/Users/demo/AppData/Roaming/DevToolbox/user-runtime-state.json',
+        gitIdentity: 'C:/Users/demo/AppData/Roaming/DevToolbox/git-identity.json',
+        os: 'windows',
+        arch: 'amd64',
+      }
+    case 'app.open':
+      return {}
     case 'project.scanPreview': {
       const rootPath = String(payload.rootPath ?? '').trim()
       if (!rootPath) throw new Error('请输入项目目录。')

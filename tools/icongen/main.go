@@ -1,8 +1,6 @@
-// Command icongen renders the DevToolbox application icon (navy rounded
-// square, mint "identity key assembled from git commit nodes" glyph: a
-// commit-ring bow with a light core, a shaft, and two teeth ending in
-// commit nodes) and writes the multi-size ICO to its fixed asset path.
-// The geometry mirrors the SVG design 1:1 in 512-unit space. Run from the
+// Command icongen renders the DevToolbox application icon: a warm paper
+// rounded square and the copper key (ring bow, shaft, two teeth). The
+// geometry matches assets/logo.svg and the in-app BrandMark. Run from the
 // repo root:
 //
 //	go run ./tools/icongen
@@ -28,57 +26,49 @@ const (
 	inset      = 40.0
 	squareSize = 432.0
 	corner     = 96.0
-	strokeHalf = 14.4
 )
 
 var (
-	gradTop    = color.RGBA{26, 58, 92, 255}
-	gradBottom = color.RGBA{11, 28, 46, 255}
-	mint       = color.RGBA{128, 224, 192, 255}
-	token      = color.RGBA{234, 252, 244, 255}
+	paper  = color.RGBA{244, 239, 230, 255}
+	copper = color.RGBA{163, 75, 42, 255}
 )
 
-var (
-	// bow: commit-ring with a light core (dual-identity accent)
-	bow                        = pt{176, 256}
-	ringInner, ringOuter, dotR = 46.0, 78.0, 24.0
-	// shaft and teeth ending in commit nodes
-	shaftA, shaftB   = pt{254, 256}, pt{384, 256}
-	shaftHalf        = 16.0
-	tooth1A, tooth1B = pt{320, 256}, pt{320, 312}
-	tooth2A, tooth2B = pt{376, 256}, pt{376, 336}
-	toothHalf        = 14.0
-	node1, node2     = pt{320, 318}, pt{376, 342}
-	nodeR            = 22.0
+// Key geometry in the same 116×58 space as BrandMark, placed in the 512 tile.
+const (
+	markScale = 400.0 / 116.0
+	markX     = 56.0
+	markY     = 156.0
 )
 
-func lerp(a, b, t float64) float64 { return a + (b-a)*t }
-
-func lerpColor(t float64) color.RGBA {
-	return color.RGBA{
-		uint8(lerp(float64(gradTop.R), float64(gradBottom.R), t)),
-		uint8(lerp(float64(gradTop.G), float64(gradBottom.G), t)),
-		uint8(lerp(float64(gradTop.B), float64(gradBottom.B), t)),
-		255,
-	}
+func toMark(p pt) pt {
+	return pt{(p.x - markX) / markScale, (p.y - markY) / markScale}
 }
 
-func distToSegment(p, a, b pt) float64 {
-	abx, aby := b.x-a.x, b.y-a.y
-	apx, apy := p.x-a.x, p.y-a.y
-	length := abx*abx + aby*aby
-	t := 0.0
-	if length > 0 {
-		t = (apx*abx + apy*aby) / length
-		if t < 0 {
-			t = 0
-		}
-		if t > 1 {
-			t = 1
-		}
+func inRoundRect(p pt, x, y, w, h, r float64) bool {
+	if p.x < x || p.x > x+w || p.y < y || p.y > y+h {
+		return false
 	}
-	cx, cy := a.x+abx*t, a.y+aby*t
-	return math.Hypot(p.x-cx, p.y-cy)
+	cx := math.Max(x+r, math.Min(p.x, x+w-r))
+	cy := math.Max(y+r, math.Min(p.y, y+h-r))
+	return math.Hypot(p.x-cx, p.y-cy) <= r || (p.x >= x+r && p.x <= x+w-r) || (p.y >= y+r && p.y <= y+h-r)
+}
+
+func paintKey(p pt) bool {
+	m := toMark(p)
+	d := math.Hypot(m.x-28, m.y-28)
+	if d <= 4 {
+		return true
+	}
+	if d <= 10 {
+		return false
+	}
+	if d <= 22 {
+		return true
+	}
+	if inRoundRect(m, 42, 21, 62, 14, 3) || inRoundRect(m, 82, 30, 8, 16, 2) || inRoundRect(m, 96, 30, 8, 20, 2) {
+		return true
+	}
+	return false
 }
 
 func inSquircle(p pt) bool {
@@ -92,37 +82,14 @@ func inSquircle(p pt) bool {
 	return math.Hypot(p.x-cx, p.y-cy) <= corner
 }
 
-func dist(p, c pt) float64 { return math.Hypot(p.x-c.x, p.y-c.y) }
-
-func paintGlyph(p pt) bool {
-	if d := dist(p, bow); d >= ringInner && d <= ringOuter {
-		return true
-	}
-	if distToSegment(p, shaftA, shaftB) <= shaftHalf {
-		return true
-	}
-	if distToSegment(p, tooth1A, tooth1B) <= toothHalf || dist(p, node1) <= nodeR {
-		return true
-	}
-	if distToSegment(p, tooth2A, tooth2B) <= toothHalf || dist(p, node2) <= nodeR {
-		return true
-	}
-	return false
-}
-
 func sample(p pt) color.RGBA {
 	if !inSquircle(p) {
 		return color.RGBA{0, 0, 0, 0}
 	}
-	t := (p.y - inset) / squareSize
-	base := lerpColor(math.Min(math.Max(t, 0), 1))
-	if dist(p, bow) <= dotR {
-		return token
+	if paintKey(p) {
+		return copper
 	}
-	if paintGlyph(p) {
-		return mint
-	}
-	return base
+	return paper
 }
 
 func render(size int) *image.RGBA {

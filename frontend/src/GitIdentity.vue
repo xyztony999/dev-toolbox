@@ -648,7 +648,7 @@ onMounted(() => guard('bootstrap', async () => {
 
 /* 身份档案列表 */
 .identity-row{display:flex;align-items:flex-start;gap:14px;padding:14px 0;border-top:1px solid var(--border-soft)}
-.avatar{flex:none;display:grid;place-items:center;width:38px;height:38px;border-radius:9px;background:var(--accent-soft);color:var(--accent-strong);font-weight:700;font-size:16px}
+.avatar{flex:none;display:grid;place-items:center;width:36px;height:36px;border-radius:6px;background:var(--accent-soft);color:var(--accent-strong);font-weight:600;font-size:15px}
 .identity-main{flex:1;min-width:0}
 .identity-title{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;color:var(--text-strong)}
 .identity-title strong{font-size:14.5px;overflow-wrap:anywhere}
@@ -668,13 +668,13 @@ onMounted(() => guard('bootstrap', async () => {
 /* 仓库层比目录规则再深一级：缩进深度对应「范围更小、优先级更高」。 */
 .layer.nested.deeper{margin-left:36px}
 .layer-head{margin-bottom:4px}
-.layer-head h3{margin:0;color:var(--text-title);font:600 14.5px 'Segoe UI'}
+.layer-head h3{margin:0;color:var(--text-title);font:600 13.5px/1.4 var(--sans)}
 .layer-hint{margin:0 0 12px;color:var(--text-muted);font-size:12.5px;line-height:1.6}
 .inline-form{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
 .inline-form .grow{flex:1;min-width:220px}
 .inline-form .pick{width:200px}
 .inline-label{color:var(--text-muted);font-size:12.5px}
-.global-card{display:flex;align-items:center;gap:14px;padding:12px 16px;border-radius:8px;background:var(--bg-soft)}
+.global-card{display:flex;align-items:center;gap:14px;padding:10px 12px;border-radius:4px;background:var(--bg-soft);border:1px solid var(--border-soft)}
 .global-main{flex:1;min-width:0}
 .global-main strong{display:block;color:var(--text-strong);overflow-wrap:anywhere}
 .global-main small{display:block;margin-top:3px;color:var(--text-muted);font-size:12.5px;overflow-wrap:anywhere}
@@ -687,7 +687,7 @@ onMounted(() => guard('bootstrap', async () => {
 .rule-target .ant-tag{margin:0}
 .rule-action{margin-left:auto}
 .rule-add{margin-top:14px}
-.result-panel{--change-rule:var(--border);margin-top:12px;padding:14px 16px;border-radius:8px;background:var(--bg-soft)}
+.result-panel{--change-rule:var(--border);margin-top:12px;padding:12px 12px;border-radius:4px;background:var(--bg-soft);border:1px solid var(--border-soft)}
 .result-head{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin-bottom:8px;color:var(--text-strong)}
 .result-head strong{font-weight:600}
 .result-head span{color:var(--text-muted);font-size:12.5px}

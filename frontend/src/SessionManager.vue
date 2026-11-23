@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import { message, Modal } from 'ant-design-vue'
 import { invoke } from './bridge'
+import RuntimeMark from './RuntimeMark.vue'
 
 interface ToolState { tool: string; status: string; version?: string; reason?: string; binDir?: string }
 interface TerminalInfo { id: string; label: string }
@@ -108,7 +109,7 @@ function launch() {
         </div>
         <div class="tool-list">
           <div v-for="item in preview.tools" :key="item.tool" class="tool-row">
-            <strong class="tool-name">{{ item.tool }}</strong>
+            <strong class="tool-name"><RuntimeMark :name="item.tool" :size="16" />{{ item.tool }}</strong>
             <a-tag :color="item.status === 'injected' ? 'green' : 'default'">
               {{ item.status === 'injected' ? '注入' : '跳过' }}
             </a-tag>
@@ -152,7 +153,7 @@ function launch() {
 .tool-list { display: flex; flex-direction: column; }
 .tool-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-top: 1px solid var(--border-soft); }
 .tool-row:first-child { border-top: 0; }
-.tool-name { min-width: 84px; }
+.tool-name { min-width: 108px; display: inline-flex; align-items: center; gap: 8px; }
 .tool-state { color: var(--text-strong); font-size: 12.5px; overflow-wrap: anywhere; }
 .tool-bin { margin-left: auto; color: var(--text-muted); font-size: 11.5px; overflow-wrap: anywhere; }
 .session-meta { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 10px; color: var(--text-muted); font-size: 12.5px; }

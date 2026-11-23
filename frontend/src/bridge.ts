@@ -5,6 +5,13 @@ declare global {
     devToolbox?: {
       invoke: (request: NativeRequest) => Promise<{ accepted: boolean; requestId: string }>
       cancel: (requestId: string) => void
+      window?: {
+        minimize: () => Promise<{ maximized?: boolean }>
+        toggleMaximize: () => Promise<{ maximized?: boolean }>
+        close: () => Promise<{ maximized?: boolean }>
+        drag: () => Promise<{ maximized?: boolean }>
+        isMaximized: () => Promise<{ maximized?: boolean }>
+      }
     }
     __devToolboxResolve?: (requestId: string, response: NativeResponse<unknown>) => void
     __devToolboxEvent?: (event: unknown) => void
@@ -49,6 +56,8 @@ window.__devToolboxResolve = (id, response) => {
 }
 
 export const isDemoClient = (import.meta.env.DEV || import.meta.env.MODE === 'demo') && typeof window !== 'undefined' && !window.devToolbox
+
+export const isNativeWindow = typeof window !== 'undefined' && !!window.devToolbox?.window
 
 export function cancel(requestId: string): void {
   window.devToolbox?.cancel(requestId)

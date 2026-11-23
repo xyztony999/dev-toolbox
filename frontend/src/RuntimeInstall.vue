@@ -2,6 +2,7 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { message, Modal } from 'ant-design-vue'
 import { invoke } from './bridge'
+import RuntimeMark from './RuntimeMark.vue'
 import type { InstallEvent, InstallOption, InstallPlan, InstallTask } from './types'
 
 const tools = ['node', 'java', 'maven', 'gradle', 'androidsdk', 'golang', 'python']
@@ -166,7 +167,11 @@ onUnmounted(() => {
   <section class="section">
     <div class="section-title"><div><h2>获取运行时</h2></div></div>
     <div class="toolbar">
-      <a-select v-model:value="tool" :options="tools.map((value) => ({ label: value, value }))" :disabled="taskActive" @change="onToolChange" />
+      <a-select v-model:value="tool" class="tool-select" :disabled="taskActive" @change="onToolChange">
+        <a-select-option v-for="name in tools" :key="name" :value="name">
+          <span class="tool-heading"><RuntimeMark :name="name" :size="16" /><span>{{ name }}</span></span>
+        </a-select-option>
+      </a-select>
       <a-select v-model:value="mirror" :options="mirrors.map((item) => ({ label: item.label, value: item.id }))" :disabled="taskActive || !mirrors.length" />
       <a-input v-model:value="selector" :placeholder="optionFor(tool)?.versionSelectors.join(' / ') || 'latest'" :disabled="taskActive" class="selector-input" aria-label="版本通道" />
       <a-button :loading="busy" :disabled="taskActive || !!unsupportedReason" @click="previewPlan">查询并预览</a-button>
@@ -178,7 +183,7 @@ onUnmounted(() => {
       <a-divider />
       <div class="plan-card">
         <div class="plan-head">
-          <div><strong>{{ plan.tool }} {{ plan.resolvedVersion }}</strong><small>provider {{ plan.providerId }}，镜像 {{ plan.mirror }}，{{ plan.os }}/{{ plan.arch }}</small></div>
+          <div><strong class="tool-heading"><RuntimeMark :name="plan.tool" :size="16" /><span>{{ plan.tool }} {{ plan.resolvedVersion }}</span></strong><small>provider {{ plan.providerId }}，镜像 {{ plan.mirror }}，{{ plan.os }}/{{ plan.arch }}</small></div>
           <a-tag v-if="plan.targetExists" color="red">目标已存在</a-tag>
         </div>
         <div v-for="pkg in plan.packages" :key="pkg.name" class="plan-package">
@@ -220,7 +225,9 @@ onUnmounted(() => {
 
 <style scoped>
 .selector-input{max-width:220px}.toolbar :deep(.ant-select){min-width:150px}
-.plan-card,.task-card{border:1px solid var(--border);border-radius:10px;padding:16px}
+.tool-select{min-width:156px}
+.tool-heading,.plan-head strong.tool-heading{display:inline-flex;align-items:center;gap:8px}
+.plan-card,.task-card{border:1px solid var(--border);border-radius:4px;padding:12px 14px;background:var(--bg-soft)}
 .plan-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
 .plan-head strong{display:block}
 .plan-head small{display:block;margin-top:4px;color:var(--text-muted);overflow-wrap:anywhere}

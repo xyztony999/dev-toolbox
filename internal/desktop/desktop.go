@@ -8,7 +8,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strconv"
@@ -54,8 +56,10 @@ func Run() {
 	}
 	defer w.Destroy()
 	w.SetTitle("DevToolbox")
+	w.SetSize(960, 640, webview.HintMin)
 	w.SetSize(1180, 800, webview.HintNone)
 	setWindowIcon(w)
+	installClientFrame(uintptr(w.Window()))
 	// The Bind callback runs on the UI thread; doing work here would freeze
 	// the window for every process-spawning operation. Each request is
 	// therefore acknowledged immediately, processed on a goroutine, and the
@@ -103,7 +107,12 @@ func Run() {
 	}); err != nil {
 		panic(err)
 	}
-	w.Init(`window.__devToolboxHeartbeat('init');window.devToolbox={invoke:async r=>window.__devToolboxInvoke(JSON.stringify(r)),cancel:id=>window.__devToolboxCancel(id)};window.onerror=function(m,s,l,c){try{window.__devToolboxReportError(String(m),String(s),l||0,c||0)}catch(e){}};window.addEventListener('unhandledrejection',function(e){try{window.__devToolboxReportError('unhandledrejection: '+String(e.reason),'',0,0)}catch(_){}});`)
+	if err := w.Bind("__devToolboxWindow", func(action string) (map[string]any, error) {
+		return windowCommand(action), nil
+	}); err != nil {
+		panic(err)
+	}
+	w.Init(`window.__devToolboxHeartbeat('init');window.devToolbox={invoke:async r=>window.__devToolboxInvoke(JSON.stringify(r)),cancel:id=>window.__devToolboxCancel(id),window:{minimize:()=>window.__devToolboxWindow('minimize'),toggleMaximize:()=>window.__devToolboxWindow('toggleMaximize'),close:()=>window.__devToolboxWindow('close'),drag:()=>window.__devToolboxWindow('drag'),isMaximized:()=>window.__devToolboxWindow('isMaximized')}};window.onerror=function(m,s,l,c){try{window.__devToolboxReportError(String(m),String(s),l||0,c||0)}catch(e){}};window.addEventListener('unhandledrejection',function(e){try{window.__devToolboxReportError('unhandledrejection: '+String(e.reason),'',0,0)}catch(_){}});`)
 	// Host-push install events: the manager sink marshals on its own
 	// goroutine and Eval happens on the UI thread via Dispatch.
 	runtimeinstall.Default.SetSink(func(evt runtimeinstall.Event) {
@@ -158,6 +167,16 @@ func invoke(req request) response {
 		data, err = project.List()
 	case "project.scanToolVersion":
 		data = map[string]string{"version": project.ScanToolVersion}
+	case "app.info":
+		data, err = clientInfo()
+	case "app.open":
+		var p struct {
+			Kind   string `json:"kind"`
+			Target string `json:"target"`
+		}
+		if err = decode(req.Payload, &p); err == nil {
+			err = openClientTarget(p.Kind, p.Target)
+		}
 	case "project.scanPreview":
 		var p struct {
 			RootPath string `json:"rootPath"`
@@ -771,6 +790,67 @@ func invoke(req request) response {
 		return failed(req.RequestID, err)
 	}
 	return response{RequestID: req.RequestID, OK: true, Data: data}
+}
+
+const clientVersion = "0.1.0"
+
+func clientInfo() (map[string]string, error) {
+	base, err := os.UserConfigDir()
+	if err != nil {
+		return nil, err
+	}
+	dir := filepath.Join(base, "DevToolbox")
+	return map[string]string{
+		"version":         clientVersion,
+		"scanToolVersion": project.ScanToolVersion,
+		"configDir":       dir,
+		"projectStore":    filepath.Join(dir, "projects.json"),
+		"runtimeState":    filepath.Join(dir, "user-runtime-state.json"),
+		"gitIdentity":     filepath.Join(dir, "git-identity.json"),
+		"os":              runtime.GOOS,
+		"arch":            runtime.GOARCH,
+	}, nil
+}
+
+func openClientTarget(kind, target string) error {
+	target = strings.TrimSpace(target)
+	switch kind {
+	case "repo":
+		parsed, err := url.Parse(target)
+		if err != nil || parsed.Scheme != "https" || parsed.Host != "github.com" || !strings.HasPrefix(parsed.Path, "/xyztony999/dev-toolbox") {
+			return errors.New("只能打开 DevToolbox 的仓库页面")
+		}
+		return startOpen(target)
+	case "config":
+		base, err := os.UserConfigDir()
+		if err != nil {
+			return err
+		}
+		dir := filepath.Clean(filepath.Join(base, "DevToolbox"))
+		if filepath.Clean(target) != dir {
+			return errors.New("只能打开 DevToolbox 的数据目录")
+		}
+		if err := os.MkdirAll(dir, 0o700); err != nil {
+			return err
+		}
+		return startOpen(dir)
+	default:
+		return errors.New("OPERATION_NOT_ALLOWED")
+	}
+}
+
+func startOpen(target string) error {
+	switch runtime.GOOS {
+	case "windows":
+		if strings.HasPrefix(target, "https://") {
+			return exec.Command("rundll32", "url.dll,FileProtocolHandler", target).Start()
+		}
+		return exec.Command("explorer", target).Start()
+	case "darwin":
+		return exec.Command("open", target).Start()
+	default:
+		return exec.Command("xdg-open", target).Start()
+	}
 }
 
 func decode(raw map[string]json.RawMessage, target any) error {

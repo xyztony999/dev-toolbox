@@ -208,7 +208,7 @@ async function submit() {
 .editor-form .field-group{padding:4px 0 20px;border-top:1px solid var(--border-soft)}
 .editor-form .field-group:first-child{border-top:0;padding-top:0}
 .editor-form .field-group:last-of-type{padding-bottom:4px}
-.field-group h3{margin:0 0 14px;color:var(--text-title);font:600 14.5px 'Segoe UI'}
+.field-group h3{margin:0 0 14px;color:var(--text-title);font:600 13.5px/1.4 var(--sans)}
 .field-group .ant-form-item{margin-bottom:14px}
 .key-note{margin-left:8px;color:var(--text-muted);font-weight:400}
 .field-group .key-note{font:400 12px ui-monospace,Consolas,'Cascadia Mono',monospace}

@@ -2,6 +2,7 @@
 import { onMounted, reactive, ref } from 'vue'
 import { message, Modal } from 'ant-design-vue'
 import { invoke } from './bridge'
+import RuntimeMark from './RuntimeMark.vue'
 import RuntimeInstall from './RuntimeInstall.vue'
 
 interface GoEnvChange { key: string; from: string; to: string; action: 'set' | 'unset' }
@@ -261,13 +262,14 @@ onMounted(reload)
     <a-tab-pane key="tools" tab="运行时">
       <div class="group-actions"><a-button :loading="busy" @click="reload">刷新</a-button></div>
       <a-collapse v-model:activeKey="activeTools" class="tool-collapse" @change="onCollapseChange">
-        <a-collapse-panel v-for="tool in TOOLS" :key="tool" :header="tool">
+        <a-collapse-panel v-for="tool in TOOLS" :key="tool">
+          <template #header><span class="tool-heading"><RuntimeMark :name="tool" /><span>{{ tool }}</span></span></template>
           <template #extra><span class="collapse-extra">{{ selectedLabel(tool) }}</span></template>
 
           <div class="group-label">版本管理</div>
           <a-empty v-if="!installationsOf(tool).length" :description="`尚无 ${tool} 安装记录；可在「获取运行时」下载或「发现与登记」登记。`" />
           <div v-for="inst in installationsOf(tool)" :key="inst.id" class="runtime-pref-row">
-            <div><strong>{{ tool }} {{ inst.version || inst.label || '版本未知' }}</strong><small>{{ inst.localHome }}</small></div>
+            <div class="tool-heading"><RuntimeMark :name="tool" :size="16" /><div><strong>{{ tool }} {{ inst.version || inst.label || '版本未知' }}</strong><small>{{ inst.localHome }}</small></div></div>
             <a-space wrap>
               <a-tag :color="inst.source === 'downloaded' ? 'blue' : 'default'">{{ inst.source === 'downloaded' ? '已下载' : '已登记' }}</a-tag>
               <a-tag v-if="isDefault(tool, inst)" color="green">全局默认</a-tag>
@@ -311,7 +313,11 @@ onMounted(reload)
     <a-tab-pane key="discover" tab="发现与登记">
       <div class="toolbar">
         <a-input v-model:value="discoveryRoot" class="grow" placeholder="可选：指定目录（只检查该目录及直接子目录）" />
-        <a-select v-model:value="inspectTool" style="width: 132px" :options="['node', 'java', 'maven', 'gradle', 'androidsdk', 'golang', 'python', 'rust'].map((value) => ({ label: value, value }))" />
+        <a-select v-model:value="inspectTool" style="width: 148px">
+          <a-select-option v-for="name in ['node', 'java', 'maven', 'gradle', 'androidsdk', 'golang', 'python', 'rust']" :key="name" :value="name">
+            <span class="tool-heading"><RuntimeMark :name="name" :size="14" /><span>{{ name }}</span></span>
+          </a-select-option>
+        </a-select>
         <a-button :loading="busy" @click="discoverRuntimes">扫描本机</a-button>
         <a-button :loading="busy" :disabled="!discoveryRoot.trim()" @click="inspectRuntimePath">检查指定目录</a-button>
         <a-button type="primary" :disabled="!selectedCandidates.length" :loading="busy" @click="registerCandidates">登记所选</a-button>
@@ -321,7 +327,7 @@ onMounted(reload)
       <a-checkbox-group v-else v-model:value="selectedCandidates" class="candidate-list">
         <div v-for="item in candidates" :key="item.candidateId" class="candidate-row">
           <a-checkbox :value="item.candidateId" />
-          <div><strong>{{ item.tool }}，{{ item.version }}</strong><small>{{ item.home }}</small><small>来源 {{ item.source }}，证据 {{ item.confidence }}，{{ item.evidence.join('、') }}</small></div>
+          <div><strong class="tool-heading"><RuntimeMark :name="item.tool" :size="16" /><span>{{ item.tool }}，{{ item.version }}</span></strong><small>{{ item.home }}</small><small>来源 {{ item.source }}，证据 {{ item.confidence }}，{{ item.evidence.join('、') }}</small></div>
           <a-tag :color="item.availability === 'available' ? 'green' : 'orange'">{{ item.availability }}</a-tag>
         </div>
       </a-checkbox-group>
@@ -377,5 +383,7 @@ onMounted(reload)
 .tool-collapse :deep(.ant-collapse-item){border-bottom:1px solid var(--border-soft)}
 .tool-collapse :deep(.ant-collapse-header){align-items:center}
 .collapse-extra{color:var(--text-muted);font-size:12px}
+.candidate-row strong.tool-heading{display:inline-flex}
+.tool-heading{display:inline-flex;align-items:center;gap:8px;min-width:0}
 .tool-collapse .group-label{margin-top:4px}@media(max-width:640px){.runtime-pref-row{align-items:flex-start;flex-direction:column}.candidate-row{align-items:flex-start}}
 </style>
