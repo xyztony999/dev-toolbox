@@ -16,6 +16,7 @@ modules:
     title: 项目/仓库/模块发现与上下文
     domain: project
     changelog_2026_11_18: 详情页改四页签分区导航（概览/Git 仓库/构建模块/扫描提示）+ 关键字过滤与"仅看待处理"；运行时声明状态中文标签+悬浮说明+证据明细；androidsdk compileSdk/minSdk 冲突误报已修
+    changelog_2026_11_23: 扫描器 v3——gradle source/targetCompatibility、jvmTarget 识别（java 未声明修复）；冲突分组按 runtime+属性（同属性互斥值才冲突）；venv 族目录前缀忽略（partial 不再阻塞快照）；scanToolVersion 落盘 + 前端旧扫描结果过期横幅（partial 不刷新版本号）
     stages:
       requirement: {status: complete, note: D0-D2 已完成只读项目/仓库/模块发现设计}
       api: {status: complete, note: D3 Go 应用服务契约 v1.0}
@@ -25,7 +26,7 @@ modules:
       validation: {status: todo}
     gates:
       gate1: {status: pass, note: 2026-10-27 D0-D4 project-context 设计通过；详见 gate1-project-context-2026-10-27.md}
-      gate2: {status: pending, note: 2026-11-18 增量修复见 gate2-desktop-ux-fixes-2026-11-18.md；完整 Gate 2 待排}
+      gate2: {status: pending, note: 2026-11-18 增量修复见 gate2-desktop-ux-fixes-2026-11-18.md；2026-11-23 扫描器 v3（真机 D:\Project 全树 complete/0 冲突/已声明 37）；完整 Gate 2 待排}
   - name: runtime-migration
     title: 七工具能力迁移与版本约束
     domain: runtime
@@ -111,12 +112,12 @@ modules:
       requirement: {status: complete, note: D0 完成边界：注入仅子进程/终端枚举/Git 身份只预览；WT 与任意命令不纳入}
       api: {status: complete, note: D3 session.preview/open 契约 v1.0（SessionToolState/TerminalId 枚举、环境组装规范）}
       interaction: {status: complete, note: D4 项目详情终端面板 + 仓库快捷入口 v1.0}
-      backend: {status: complete, note: internal/session（求值/组装/终端目录/conhost 启动）+ CLI + 桥接；4 测试含 env 继承实证}
+      backend: {status: complete, note: internal/session（求值/组装/终端目录/Win32 CreateProcessW 启动）+ CLI + 桥接；含 env 继承与存活契约测试}
       frontend: {status: complete, note: SessionManager 抽屉（预览/cwd/终端选择/启动确认）；真机 GUI 全链路截图验证}
       validation: {status: complete, note: Gate 2 PASS——含 NavigateToString 1.5MB 上限发现与 file:// 回退修复}
     gates:
       gate1: {status: pass, note: 2026-11-03 session-launcher D0-D4 PASS；详见 gate1-session-launcher-2026-11-03.md}
-      gate2: {status: pass, note: 2026-11-04 自动化+Windows 真机 CLI/GUI 全过；2026-11-18 增量：启动链改 CREATE_NEW_CONSOLE 直启（修复 GUI 打不开）、探测排除 WSL bash、面板重设计，见 gate2-desktop-ux-fixes-2026-11-18.md}
+      gate2: {status: pass, note: 2026-11-04 自动化+Windows 真机 CLI/GUI 全过；2026-11-18 增量：启动链改 CREATE_NEW_CONSOLE 直启（修复 GUI 打不开）、探测排除 WSL bash、面板重设计，见 gate2-desktop-ux-fixes-2026-11-18.md；2026-11-23 增量：NUL stdio 根因修复（显式 stdio——stdin 命名管道写端子进程自持 + stdout/err NUL + 挂起宽限），GUI 子系统等价验证 10/10 存活，tools/guiopen 保留作启动链回归验证工具}
   - name: desktop-shell
     title: Go WebView 与 Vue/AntD 桌面宿主
     domain: desktop

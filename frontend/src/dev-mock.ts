@@ -32,7 +32,7 @@ const projects: Project[] = [
       },
     ],
     issues: [{ code: 'PROJECT_SCAN_DEPTH_LIMIT', severity: 'info', relativePath: 'web/.cache', message: '依赖与缓存目录已跳过', recoverable: true }],
-    scanStatus: 'complete', createdAt: now(), lastScanAt: now(), revision: 1,
+    scanStatus: 'complete', createdAt: now(), lastScanAt: now(), scanToolVersion: '2', revision: 1,
   },
 ]
 
@@ -185,10 +185,14 @@ const gitProfiles: Array<{ id: string; name: string; email: string; signingKey?:
   { id: 'personal', name: 'tony', email: 'tony@me.dev' },
 ]
 
+const SCAN_TOOL_VERSION = '3'
+
 export async function mockInvoke(operation: string, payload: Record<string, unknown>): Promise<unknown> {
   switch (operation) {
     case 'project.list':
       return copy(projects)
+    case 'project.scanToolVersion':
+      return { version: SCAN_TOOL_VERSION }
     case 'project.scanPreview': {
       const rootPath = String(payload.rootPath ?? '').trim()
       if (!rootPath) throw new Error('请输入项目目录。')
@@ -212,6 +216,7 @@ export async function mockInvoke(operation: string, payload: Record<string, unkn
         scanStatus: candidate.status,
         createdAt: now(),
         lastScanAt: candidate.scannedAt,
+        scanToolVersion: SCAN_TOOL_VERSION,
         revision: 1,
       }
       projects.unshift(created)
@@ -227,6 +232,7 @@ export async function mockInvoke(operation: string, payload: Record<string, unkn
       if (!found) throw new Error('PROJECT_NOT_FOUND')
       if (found.revision !== payload.expectedRevision) throw new Error('PROJECT_REVISION_CONFLICT')
       found.lastScanAt = now()
+      found.scanToolVersion = SCAN_TOOL_VERSION
       found.revision += 1
       found.scanStatus = 'complete'
       return copy(found)

@@ -30,6 +30,17 @@ var ignoredDirectories = map[string]bool{
 	"target": true, ".gradle": true, "coverage": true, "bin": true,
 }
 
+// shouldIgnoreDir 在精确名单之外识别 venv 族变体（.venv-workers、
+// .venv-prod 等自定义虚拟环境名）：它们是可重建的依赖目录，深入只会
+// 触发深度上限（partial 快照被拒收，SEG2105 用户场景即此）。
+func shouldIgnoreDir(name string) bool {
+	lower := strings.ToLower(name)
+	if ignoredDirectories[lower] {
+		return true
+	}
+	return strings.HasPrefix(lower, ".venv") || strings.HasPrefix(lower, "venv")
+}
+
 type moduleFiles struct {
 	path  string
 	files map[string]string
@@ -109,7 +120,7 @@ func scan(ctx context.Context, root string) (Candidate, error) {
 			depth = strings.Count(filepath.Clean(rel), string(filepath.Separator)) + 1
 		}
 		if entry.IsDir() {
-			if rel != "." && ignoredDirectories[strings.ToLower(entry.Name())] {
+			if rel != "." && shouldIgnoreDir(entry.Name()) {
 				return filepath.SkipDir
 			}
 			if depth > maxDepth {
@@ -244,8 +255,10 @@ func makeModule(files *moduleFiles) Module {
 				requirements = append(requirements, requirement("java", item.value, files.path, name, item.locator, "high", "maven-pom"))
 			}
 		case "build.gradle", "build.gradle.kts":
-			for _, v := range findGradleJavaVersions(raw) {
-				requirements = append(requirements, requirement("java", v, files.path, name, "java toolchain", "medium", "gradle"))
+			for _, item := range findGradleJavaVersions(raw) {
+				req := requirement("java", item.constraint, files.path, name, item.locator, "medium", "gradle")
+				req.Evidence[0].RawValue = item.observed
+				requirements = append(requirements, req)
 			}
 			for _, v := range findAndroidSDKVersions(raw) {
 				requirements = append(requirements, requirement("androidsdk", v.value, files.path, name, v.locator, "medium", "gradle-android"))
@@ -333,14 +346,27 @@ func requirement(runtime, raw, modulePath, filename, locator, confidence, parser
 	}
 }
 
+// ScanToolVersion 随扫描结果落盘（Project.scanToolVersion）：扫描判定
+// 逻辑演进后，客户端可据此提示旧快照已过期、建议重新扫描——避免
+// "判定已修、界面仍显示旧结论"的错觉（2026-11-23 androidsdk 误报即此）。
+const ScanToolVersion = "3"
+
 func markConflicts(reqs []RuntimeRequirement) {
-	// 冲突按键默认按 runtime 分组：同名运行时只有一个生效版本，
-	// 多来源互斥值即冲突（区间混入时降级 unknown，不擅自任选）。
-	// androidsdk 例外：compileSdk 与 minSdk 是同一运行时的两个不同
-	// 属性，各自独立成立，不构成冲突（SEG2105/app 误报即此）。
+	// 冲突按键：默认按 runtime 分组——单一语义版本（java toolchain、
+	// maven 属性族、node、python 等）多来源互斥值即冲突（区间混入时
+	// 降级 unknown，不擅自任选）。
+	// 多属性运行时按 runtime+locator 拆组：同一属性的多个互斥值才是
+	// 冲突，不同属性各自独立成立——androidsdk 的 compileSdk/minSdk、
+	// gradle 字节码兼容属性对（source/targetCompatibility、jvmTarget，
+	// 可与 toolchain 共存不同值）均不构成冲突（SEG2105/app 误报即此）。
 	group := func(r RuntimeRequirement) string {
-		if r.Runtime == "androidsdk" && len(r.Evidence) > 0 {
-			return "androidsdk:" + r.Evidence[0].Locator
+		if len(r.Evidence) > 0 {
+			key := r.Runtime + "/" + r.Evidence[0].Locator
+			switch key {
+			case "androidsdk/compileSdk", "androidsdk/minSdk",
+				"java/sourceCompatibility", "java/targetCompatibility", "java/jvmTarget":
+				return r.Runtime + ":" + r.Evidence[0].Locator
+			}
 		}
 		return r.Runtime
 	}
@@ -509,16 +535,69 @@ func findMavenJavaVersions(raw string) []mavenVersion {
 	return result
 }
 
-func findGradleJavaVersions(raw string) []string {
-	re := regexp.MustCompile(`(?i)(?:JavaLanguageVersion\.of\s*\(\s*|languageVersion\s*=\s*JavaLanguageVersion\.of\s*\(\s*)([0-9]+)`)
-	matches := re.FindAllStringSubmatch(raw, -1)
-	var result []string
+type gradleJavaVersion struct {
+	constraint string // 规范化约束（进 RawConstraint，参与冲突比较）
+	observed   string // 原始记号（进证据 RawValue，如 VERSION_11）
+	locator    string
+}
+
+// gradleJavaPatterns 覆盖 build.gradle(.kts) 的三类 Java 版本声明：
+// 1) toolchain languageVersion（权威声明）；2) compileOptions 的
+// source/targetCompatibility；3) kotlinOptions 的 jvmTarget。
+// source/target 与 toolchain 彼此独立、可共存不同值（如 toolchain 17 +
+// source 11），冲突判定按属性拆组（见 markConflicts）。
+var gradleJavaPatterns = []struct {
+	re      *regexp.Regexp
+	locator string
+}{
+	{regexp.MustCompile(`(?i)JavaLanguageVersion\.of\s*\(\s*([0-9]+)\s*\)`), "java toolchain"},
+	{regexp.MustCompile(`(?i)sourceCompatibility\s*=?\s*(?:JavaVersion\.)?VERSION_([0-9]+(?:_[0-9]+)?)`), "sourceCompatibility"},
+	{regexp.MustCompile(`(?i)targetCompatibility\s*=?\s*(?:JavaVersion\.)?VERSION_([0-9]+(?:_[0-9]+)?)`), "targetCompatibility"},
+	{regexp.MustCompile(`(?i)jvmTarget\s*=?\s*["']?(?:JavaVersion\.)?VERSION_([0-9]+(?:_[0-9]+)?)["']?`), "jvmTarget"},
+	{regexp.MustCompile(`(?i)jvmTarget\s*\(\s*["']?([0-9]+(?:\.[0-9]+)?)`), "jvmTarget"},
+	{regexp.MustCompile(`(?i)sourceCompatibility\s*=?\s*["']?([0-9]+(?:\.[0-9]+)?)["']?`), "sourceCompatibility"},
+	{regexp.MustCompile(`(?i)targetCompatibility\s*=?\s*["']?([0-9]+(?:\.[0-9]+)?)["']?`), "targetCompatibility"},
+	{regexp.MustCompile(`(?i)jvmTarget\s*=?\s*["']?([0-9]+(?:\.[0-9]+)?)["']?`), "jvmTarget"},
+}
+
+var javaLegacyVersion = regexp.MustCompile(`^1_([0-9]+)$`)
+
+// normalizeJavaConstraint：VERSION_1_8 / 字面量 1.8 / 单数字 8 同义
+// （Gradle JavaVersion.toVersion 语义），统一为 "1.8" 避免同义误报
+// 冲突；9+ 保留原样（无 "1.11" 纪元）。
+func normalizeJavaConstraint(token string) string {
+	t := strings.TrimSpace(token)
+	switch t {
+	case "6", "1_6", "1.6":
+		return "1.6"
+	case "7", "1_7", "1.7":
+		return "1.7"
+	case "8", "1_8", "1.8":
+		return "1.8"
+	}
+	if m := javaLegacyVersion.FindStringSubmatch(t); m != nil {
+		return "1." + m[1]
+	}
+	return t
+}
+
+func findGradleJavaVersions(raw string) []gradleJavaVersion {
+	var found []gradleJavaVersion
 	seen := map[string]bool{}
-	for _, m := range matches {
-		if len(m) == 2 && !seen[m[1]] {
-			result = append(result, m[1])
-			seen[m[1]] = true
+	for _, pattern := range gradleJavaPatterns {
+		for _, match := range pattern.re.FindAllStringSubmatch(raw, -1) {
+			token := strings.TrimSpace(match[1])
+			if token == "" {
+				continue
+			}
+			constraint := normalizeJavaConstraint(token)
+			key := pattern.locator + "/" + constraint
+			if seen[key] {
+				continue
+			}
+			seen[key] = true
+			found = append(found, gradleJavaVersion{constraint: constraint, observed: token, locator: pattern.locator})
 		}
 	}
-	return result
+	return found
 }

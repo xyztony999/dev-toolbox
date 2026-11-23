@@ -155,6 +155,8 @@ func invoke(req request) response {
 	switch req.Operation {
 	case "project.list":
 		data, err = project.List()
+	case "project.scanToolVersion":
+		data = map[string]string{"version": project.ScanToolVersion}
 	case "project.scanPreview":
 		var p struct {
 			RootPath string `json:"rootPath"`

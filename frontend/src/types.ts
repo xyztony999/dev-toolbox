@@ -68,6 +68,8 @@ export interface Project {
   scanStatus: ScanStatus
   createdAt: string
   lastScanAt: string
+  /** 落盘时使用的扫描器版本；旧快照无此字段（视为过期，界面提示重扫） */
+  scanToolVersion?: string
   revision: number
 }
 

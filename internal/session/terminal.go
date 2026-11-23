@@ -80,42 +80,16 @@ func searchPathFor(name string) string {
 	return ""
 }
 
-// startSession 是进程启动原语；测试注入替换。Windows 下 ProcAttr.Files
-// 为 nil 会得到 invalid argument（gitidentity 的经验：必须显式给句柄），
-// 终端有自己的新控制台，父侧给 DevNull 即可。
-var startSession = func(exePath string, argv []string, attr *os.ProcAttr) (int, error) {
-	if attr.Files == nil {
-		if files := nullStdHandles(); len(files) == 3 {
-			attr.Files = files
-		}
-	}
-	proc, err := os.StartProcess(exePath, argv, attr)
-	if err != nil {
-		return 0, err
-	}
-	go func() { _, _ = proc.Wait() }()
-	return proc.Pid, nil
-}
-
-// nullStdHandles 提供三份 DevNull 句柄：os.StartProcess 在 Windows 上
-// 要求显式 stdio（Files 为 nil 直接 EINVAL）；终端窗口自带新控制台，
-// 父侧不需要交互流，用完由调用方 GC/句柄表回收。
-func nullStdHandles() []*os.File {
-	files := make([]*os.File, 3)
-	for i := range files {
-		handle, err := os.OpenFile(os.DevNull, os.O_RDWR, 0)
-		if err != nil {
-			return nil
-		}
-		files[i] = handle
-	}
-	return files
-}
+// startSession 是进程启动原语；测试注入替换。平台实现见
+// sys_windows.go（Win32 CreateProcessW，不传 std 句柄——NUL 设备
+// stdio 会让交互 shell 读 EOF 立即退出）与 sys_other.go（os.StartProcess，
+// 继承调用方 stdio）。
+var startSession = startProcessSession
 
 // Open 以注入环境在 cwd 启动终端。环境在服务端重新求值，不信任调用方。
-// Windows 以目标终端可执行文件 + CREATE_NEW_CONSOLE 开出新窗口
-// （环境经 ProcAttr.Env 一次传递）；Linux 直接启动交互 shell
-// 继承调用方 stdio。
+// Windows 以目标终端可执行文件 + CREATE_NEW_CONSOLE 开出新窗口，不传
+// 任何 std 句柄（子进程绑定新控制台自身 stdio）；Linux 直接启动交互
+// shell 继承调用方 stdio。
 func Open(ctx context.Context, cwd, terminalID string) (*OpenResult, error) {
 	preview, err := ResolveContext(ctx, cwd)
 	if err != nil {
@@ -136,10 +110,9 @@ func Open(ctx context.Context, cwd, terminalID string) (*OpenResult, error) {
 	}
 	exePath, argv := launchFor(*chosen, preview.Cwd)
 	attr := &os.ProcAttr{
-		Dir:   preview.Cwd,
-		Env:   BuildEnv(os.Environ(), preview.PathPrepends, preview.JavaHome),
-		Files: nullStdHandles(),
-		Sys:   sessionSysProcAttr(),
+		Dir: preview.Cwd,
+		Env: BuildEnv(os.Environ(), preview.PathPrepends, preview.JavaHome),
+		Sys: sessionSysProcAttr(),
 	}
 	pid, err := startSession(exePath, argv, attr)
 	if err != nil {

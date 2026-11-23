@@ -77,16 +77,17 @@ type Candidate struct {
 }
 
 type Project struct {
-	ID           string       `json:"id"`
-	DisplayName  string       `json:"displayName"`
-	RootPath     string       `json:"rootPath"`
-	Repositories []Repository `json:"repositories"`
-	Modules      []Module     `json:"modules"`
-	Issues       []ScanIssue  `json:"issues,omitempty"`
-	Status       ScanStatus   `json:"scanStatus"`
-	CreatedAt    time.Time    `json:"createdAt"`
-	LastScanAt   time.Time    `json:"lastScanAt"`
-	Revision     uint64       `json:"revision"`
+	ID              string       `json:"id"`
+	DisplayName     string       `json:"displayName"`
+	RootPath        string       `json:"rootPath"`
+	Repositories    []Repository `json:"repositories"`
+	Modules         []Module     `json:"modules"`
+	Issues          []ScanIssue  `json:"issues,omitempty"`
+	Status          ScanStatus   `json:"scanStatus"`
+	CreatedAt       time.Time    `json:"createdAt"`
+	LastScanAt      time.Time    `json:"lastScanAt"`
+	ScanToolVersion string       `json:"scanToolVersion,omitempty"`
+	Revision        uint64       `json:"revision"`
 }
 
 type store struct {

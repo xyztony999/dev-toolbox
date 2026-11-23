@@ -90,16 +90,17 @@ func Register(ctx context.Context, root, name, candidateID, expectedDigest strin
 	}
 	now := time.Now().UTC()
 	p := Project{
-		ID:           stableID(candidate.RootPath),
-		DisplayName:  strings.TrimSpace(name),
-		RootPath:     candidate.RootPath,
-		Repositories: candidate.Repositories,
-		Modules:      candidate.Modules,
-		Issues:       candidate.Issues,
-		Status:       candidate.Status,
-		CreatedAt:    now,
-		LastScanAt:   candidate.ScannedAt,
-		Revision:     1,
+		ID:              stableID(candidate.RootPath),
+		DisplayName:     strings.TrimSpace(name),
+		RootPath:        candidate.RootPath,
+		Repositories:    candidate.Repositories,
+		Modules:         candidate.Modules,
+		Issues:          candidate.Issues,
+		Status:          candidate.Status,
+		CreatedAt:       now,
+		LastScanAt:      candidate.ScannedAt,
+		ScanToolVersion: ScanToolVersion,
+		Revision:        1,
 	}
 	s.Projects = append(s.Projects, p)
 	if err := writeStore(path, s); err != nil {
@@ -143,9 +144,10 @@ func Rescan(ctx context.Context, id string, expectedRevision uint64) (Project, e
 				p.Repositories = candidate.Repositories
 				p.Modules = candidate.Modules
 				p.Issues = candidate.Issues
+				p.ScanToolVersion = ScanToolVersion
 			} else {
 				// Keep the last complete discovery snapshot; expose the latest attempt status and issues.
-				p.Issues = candidate.Issues
+				// scanToolVersion 同步保留：展示的判定仍产自旧扫描器，前端过期提示不消失。
 			}
 			p.Status = candidate.Status
 			p.LastScanAt = candidate.ScannedAt

@@ -204,7 +204,20 @@ async function pickFolder() {
   } finally { picking.value = false }
 }
 
-onMounted(loadProjects)
+onMounted(async () => {
+  await loadProjects()
+  // 扫描器当前版本：与快照里落盘的 scanToolVersion 比对，判定旧快照
+  // （扫描判定已演进、界面仍是旧结论时给出重扫提示）。
+  try {
+    currentScanVersion.value = (await invoke<{ version: string }>('project.scanToolVersion')).version
+  } catch { currentScanVersion.value = '' }
+})
+
+// 快照是否产自旧版扫描器：旧快照（无 scanToolVersion 字段）也视为过期。
+const currentScanVersion = ref('')
+const scanOutdated = computed(() =>
+  !!selected.value?.lastScanAt && !!currentScanVersion.value && selected.value.scanToolVersion !== currentScanVersion.value,
+)
 </script>
 
 <template>
@@ -294,6 +307,9 @@ onMounted(loadProjects)
         </section>
 
         <template v-else-if="selected">
+          <a-alert v-if="scanOutdated" type="warning" show-icon class="stale-banner"
+            message="扫描器已更新——以下判定产自旧版扫描"
+            :description="`当前扫描器 v${currentScanVersion} 改进了判定逻辑（Android compileSdk/minSdk 不再误报冲突、Gradle sourceCompatibility/targetCompatibility 可识别）。点击右上角「重新扫描」刷新结论。`" />
           <section class="summary-grid">
             <div class="summary-card"><span class="summary-label">项目目录</span><strong class="path-value">{{ selected.rootPath }}</strong></div>
             <div class="summary-card"><span class="summary-label">最近扫描</span><strong>{{ new Date(selected.lastScanAt).toLocaleString() }}</strong></div>
