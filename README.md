@@ -5,7 +5,7 @@
 [![CI](https://github.com/xyztony999/dev-toolbox/actions/workflows/ci.yml/badge.svg)](https://github.com/xyztony999/dev-toolbox/actions/workflows/ci.yml)
 [![Website](https://img.shields.io/badge/website-dev--toolbox.tonyxyz.com-a34b2a)](https://dev-toolbox.tonyxyz.com)
 [![Release](https://img.shields.io/github/v/release/xyztony999/dev-toolbox?display_name=tag)](https://github.com/xyztony999/dev-toolbox/releases/latest)
-[![License: MIT](https://img.shields.io/github/license/xyztony999/dev-toolbox)](./LICENSE)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 [![Go](https://img.shields.io/badge/Go-1.24+-00ADD8?logo=go&logoColor=white)](https://go.dev/)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-lightgrey)](https://github.com/xyztony999/dev-toolbox/releases)
 
