@@ -261,7 +261,7 @@ onMounted(reload)
     <a-tab-pane key="tools" tab="运行时">
       <div class="group-actions"><a-button :loading="busy" @click="reload">刷新</a-button></div>
       <a-collapse v-model:activeKey="activeTools" class="tool-collapse" @change="onCollapseChange">
-        <a-collapse-pane v-for="tool in TOOLS" :key="tool" :header="tool">
+        <a-collapse-panel v-for="tool in TOOLS" :key="tool" :header="tool">
           <template #extra><span class="collapse-extra">{{ selectedLabel(tool) }}</span></template>
 
           <div class="group-label">版本管理</div>
@@ -300,7 +300,7 @@ onMounted(reload)
             </div>
           </template>
           <a-skeleton v-else active :paragraph="{ rows: 2 }" />
-        </a-collapse-pane>
+        </a-collapse-panel>
       </a-collapse>
     </a-tab-pane>
 
