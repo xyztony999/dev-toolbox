@@ -92,6 +92,19 @@ modules:
     gates:
       gate1: {status: pass, note: 2026-11-03 toolchain-import D0-D4 PASS；uv/rustup 目录布局须实现期真机验证（TH-10）；详见 gate1-toolchain-import-2026-11-03.md}
       gate2: {status: warn, note: 2026-11-03 自动化+Windows 真机全过；Linux 探测路径待真机验证；顺手修 golang/java 版本解析；详见 gate2-toolchain-import-2026-11-03.md}
+  - name: go-management
+    title: 用户级运行时设置·Go 管理（环境配置+版本管理）
+    domain: runtime
+    stages:
+      requirement: {status: complete, note: D0 澄清两项能力（go env 配置管理、安装版本管理）与边界（GOROOT 只读、不做 shim）}
+      api: {status: complete, note: D3 runtime.goEnvRead/goEnvSet/removeInstallation；go 为事实源；卸载归属保护}
+      interaction: {status: complete, note: D4 用户级运行时设置新增「Go 管理」页签 PageSpec v1.0}
+      backend: {status: complete, note: internal/goenv（go env -json/-w/-u，CREATE_NO_WINDOW）+ userstate.RemoveRecord + runtimeinstall.RemoveInstallation（归属判定）+ 桥接；沙箱测试全绿}
+      frontend: {status: complete, note: RuntimeSettings「Go 管理」页签（环境配置+版本管理）+ dev-mock；真机 AX 树验证加载真实数据}
+      validation: {status: complete, note: Gate 2 PASS——goenv 真实 go 往返/卸载归属/默认清除测试；GUI 锁屏下 AX 验证（像素截图被锁屏阻挡）}
+    gates:
+      gate1: {status: pass, note: 2026-11-23 go-management D0-D4 PASS；详见 gate1-go-management-2026-11-23.md}
+      gate2: {status: pass, note: 2026-11-23 自动化全绿+Windows 真机；发现并修复 GUI 派生控制台子进程锁屏挂起（CREATE_NO_WINDOW）}
   - name: git-remote-management
     title: 仓库 Git Remote 全生命周期管理
     domain: git

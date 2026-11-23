@@ -402,6 +402,50 @@ func SetGlobalDefault(runtimeName, installationID string, expectedRevision uint6
 	return state, nil
 }
 
+// RemoveRecord 仅移除安装记录（不触碰任何目录）；若被移除的是某工具的全局
+// 默认，则一并清除该 selection。目录删除的归属判定由调用方（runtimeinstall）负责。
+func RemoveRecord(id string, expectedRevision uint64, confirmed bool) (State, error) {
+	if !confirmed {
+		return State{}, ErrConfirmation
+	}
+	path, err := StatePath()
+	if err != nil {
+		return State{}, err
+	}
+	unlock, err := lock(path)
+	if err != nil {
+		return State{}, err
+	}
+	defer unlock()
+	state, path, err := readState()
+	if err != nil {
+		return State{}, err
+	}
+	if state.Revision != expectedRevision {
+		return State{}, errors.New("USER_RUNTIME_REVISION_CONFLICT")
+	}
+	idx := -1
+	for i, inst := range state.Installations {
+		if inst.ID == id {
+			idx = i
+			break
+		}
+	}
+	if idx < 0 {
+		return State{}, ErrNotFound
+	}
+	removed := state.Installations[idx]
+	state.Installations = append(state.Installations[:idx], state.Installations[idx+1:]...)
+	if sel, ok := state.GlobalSelections[removed.Runtime]; ok && sel.InstallationID == id {
+		delete(state.GlobalSelections, removed.Runtime)
+	}
+	state.Revision++
+	if err := writeState(path, state); err != nil {
+		return State{}, err
+	}
+	return state, nil
+}
+
 func decodeLegacy(data []byte) (legacyState, error) {
 	var old legacyState
 	if err := json.Unmarshal(data, &old); err != nil {

@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"dev-toolbox/internal/gitidentity"
+	"dev-toolbox/internal/goenv"
 	"dev-toolbox/internal/project"
 	"dev-toolbox/internal/runtimecatalog"
 	"dev-toolbox/internal/runtimeinstall"
@@ -262,6 +263,30 @@ func invoke(req request) response {
 		}
 		if err = decode(req.Payload, &p); err == nil {
 			data, err = userstate.SetGlobalDefault(p.Runtime, p.InstallationID, p.Revision, p.Confirm)
+		}
+	case "runtime.goEnvRead":
+		data, err = goenv.Read(ctx)
+	case "runtime.goEnvSet":
+		var p struct {
+			Key     string `json:"key"`
+			Value   string `json:"value"`
+			Unset   bool   `json:"unset"`
+			DryRun  bool   `json:"dryRun"`
+			Confirm bool   `json:"confirm"`
+		}
+		if err = decode(req.Payload, &p); err == nil {
+			data, err = goenv.Set(ctx, p.Key, p.Value, p.Unset, p.DryRun, p.Confirm)
+		}
+	case "runtime.removeInstallation":
+		var p struct {
+			ID          string `json:"id"`
+			Revision    uint64 `json:"expectedRevision"`
+			DeleteFiles bool   `json:"deleteFiles"`
+			DryRun      bool   `json:"dryRun"`
+			Confirm     bool   `json:"confirm"`
+		}
+		if err = decode(req.Payload, &p); err == nil {
+			data, err = runtimeinstall.RemoveInstallation(p.ID, p.Revision, p.DeleteFiles, p.DryRun, p.Confirm)
 		}
 	case "runtime.install.options":
 		var p struct {

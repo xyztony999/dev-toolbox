@@ -45,13 +45,15 @@ const userRuntimeState = {
     maven: { status: 'empty', source: '' },
     gradle: { status: 'empty', source: '' },
     androidsdk: { status: 'empty', source: '' },
-    golang: { unresolvedHome: 'D:/Tools/go-1.24', status: 'unresolved', source: 'legacy' },
+    golang: { installationId: 'demo-go-1.27', status: 'active', source: 'user' },
     python: { status: 'empty', source: '' },
     rust: { status: 'empty', source: '' },
   } as Record<string, { installationId?: string; unresolvedHome?: string; status: string; source: string }>,
   installations: [
     { id: 'demo-node-22', runtime: 'node', version: '22.14.0', major: '22', localHome: 'D:/Tools/node-v22.14.0', source: 'downloaded', label: 'Node LTS', vendor: '', available: true },
     { id: 'demo-java-21', runtime: 'java', version: '21.0.6', major: '21', localHome: 'D:/Tools/jdk-21', source: 'imported', label: '', vendor: 'Temurin', available: true },
+    { id: 'demo-go-1.27', runtime: 'golang', version: '1.27.3', major: '1.27', localHome: 'C:/Users/demo/go-1.27.3', source: 'downloaded', label: 'Go 1.27.3', vendor: 'Google Go', available: true },
+    { id: 'demo-go-1.24', runtime: 'golang', version: '1.24.0', major: '1.24', localHome: 'D:/Tools/go-1.24', source: 'user', label: '', vendor: '', available: false },
   ],
   legacyImports: [] as Array<{ sourceDigest: string; importedAt: string; backupPath: string; created: number; linked: number; unresolved: number; conflicts: number }>,
 }
@@ -187,6 +189,25 @@ const gitProfiles: Array<{ id: string; name: string; email: string; signingKey?:
 
 const SCAN_TOOL_VERSION = '3'
 
+const demoGoValues: Record<string, string> = {
+  GOPROXY: 'https://proxy.golang.org,direct', GOPATH: 'C:/Users/demo/go', GOBIN: '',
+  GOROOT: 'C:/Users/demo/go-1.27.3', GOMODCACHE: 'C:/Users/demo/go/pkg/mod',
+  GOOS: 'windows', GOARCH: 'amd64', GOVERSION: 'go1.27.3',
+}
+function demoGoReport() {
+  return {
+    goBinary: 'C:/Users/demo/go-1.27.3/bin/go.exe', goVersion: demoGoValues.GOVERSION,
+    envFile: 'C:/Users/demo/AppData/Roaming/go/env', values: { ...demoGoValues },
+    editable: ['GOPROXY', 'GOPATH', 'GOBIN'],
+    presets: [
+      { id: 'default', label: '官方 proxy.golang.org', value: 'https://proxy.golang.org,direct' },
+      { id: 'cn', label: 'goproxy.cn（国内）', value: 'https://goproxy.cn,direct' },
+      { id: 'aliyun', label: '阿里云镜像', value: 'https://mirrors.aliyun.com/goproxy/,direct' },
+      { id: 'direct', label: 'direct（离线/直连）', value: 'direct' },
+    ],
+  }
+}
+
 export async function mockInvoke(operation: string, payload: Record<string, unknown>): Promise<unknown> {
   switch (operation) {
     case 'project.list':
@@ -288,6 +309,36 @@ export async function mockInvoke(operation: string, payload: Record<string, unkn
       userRuntimeState.globalSelections[item.runtime] = { installationId: item.id, status: 'active', source: 'user' }
       userRuntimeState.revision += 1
       return copy(userRuntimeState)
+    }
+    case 'runtime.goEnvRead':
+      return copy(demoGoReport())
+    case 'runtime.goEnvSet': {
+      const key = String(payload.key ?? '')
+      if (!['GOPROXY', 'GOPATH', 'GOBIN'].includes(key)) throw new Error('GO_ENV_KEY_NOT_EDITABLE')
+      if (!payload.dryRun && !payload.confirm) throw new Error('CONFIRMATION_REQUIRED')
+      const from = demoGoValues[key] ?? ''
+      const to = payload.unset ? '' : String(payload.value ?? '')
+      if (!payload.dryRun) demoGoValues[key] = to
+      return { change: { key, from, to, action: payload.unset ? 'unset' : 'set' }, report: copy(demoGoReport()) }
+    }
+    case 'runtime.removeInstallation': {
+      if (Number(payload.expectedRevision) !== userRuntimeState.revision) throw new Error('USER_RUNTIME_REVISION_CONFLICT')
+      const idx = userRuntimeState.installations.findIndex((entry) => entry.id === payload.id)
+      if (idx < 0) throw new Error('RUNTIME_INSTALL_NOT_FOUND')
+      const inst = userRuntimeState.installations[idx]
+      const owned = inst.source === 'downloaded'
+      if (payload.deleteFiles && !owned) throw new Error('RUNTIME_REMOVE_NOT_OWNED')
+      const preview = {
+        id: inst.id, runtime: inst.runtime, version: inst.version, source: inst.source, localHome: inst.localHome,
+        ownedByProduct: owned, willDeleteDir: owned && !!payload.deleteFiles,
+        isDefault: userRuntimeState.globalSelections[inst.runtime]?.installationId === inst.id,
+      }
+      if (payload.dryRun) return { preview }
+      if (!payload.confirm) throw new Error('CONFIRMATION_REQUIRED')
+      userRuntimeState.installations.splice(idx, 1)
+      if (userRuntimeState.globalSelections[inst.runtime]?.installationId === inst.id) delete userRuntimeState.globalSelections[inst.runtime]
+      userRuntimeState.revision += 1
+      return { preview, state: copy(userRuntimeState), removed: true, dirDeleted: preview.willDeleteDir, wasDefault: preview.isDefault }
     }
     case 'runtime.install.options': {
       const tool = String(payload.tool ?? '')

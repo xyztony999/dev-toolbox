@@ -1,8 +1,14 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, reactive, ref, watch } from 'vue'
 import { message, Modal } from 'ant-design-vue'
 import { invoke } from './bridge'
 import RuntimeInstall from './RuntimeInstall.vue'
+
+interface GoEnvReport { goBinary: string; goVersion: string; envFile: string; values: Record<string, string>; editable: string[]; presets: Array<{ id: string; label: string; value: string }> }
+interface GoEnvChange { key: string; from: string; to: string; action: 'set' | 'unset' }
+interface GoEnvSetResult { change: GoEnvChange; report: GoEnvReport }
+interface RemovePreview { id: string; runtime: string; version: string; source: string; localHome: string; ownedByProduct: boolean; willDeleteDir: boolean; isDefault: boolean }
+interface RemoveResult { preview: RemovePreview; state: UserState; removed: boolean; dirDeleted: boolean; wasDefault: boolean }
 
 interface Selection { installationId?: string; unresolvedHome?: string; status: 'active' | 'unresolved' | 'empty'; source: string }
 interface Installation { id: string; runtime: string; version: string; major: string; localHome: string; source: string; label?: string; vendor?: string; available: boolean }
@@ -132,6 +138,108 @@ function registerCandidates() {
   })
 }
 
+// ---- Go 管理 ----
+const goEnv = ref<GoEnvReport>()
+const goBusy = ref(false)
+const goError = ref('')
+const goEdits = reactive<Record<string, string>>({})
+const goPreview = reactive<Record<string, GoEnvChange | undefined>>({})
+const goInstallations = ref<Installation[]>([])
+
+const goReadonlyKeys = ['GOROOT', 'GOMODCACHE', 'GOOS', 'GOARCH']
+
+async function loadGo() {
+  goBusy.value = true
+  goError.value = ''
+  try {
+    const [report, st] = await Promise.all([
+      invoke<GoEnvReport>('runtime.goEnvRead'),
+      invoke<UserState>('runtime.getUserState'),
+    ])
+    goEnv.value = report
+    for (const key of report.editable) goEdits[key] = report.values[key] ?? ''
+    goInstallations.value = st.installations.filter((item) => item.runtime === 'golang')
+    state.value = st
+  } catch (error) {
+    goError.value = error instanceof Error ? error.message : String(error)
+  } finally { goBusy.value = false }
+}
+
+watch(tab, (value) => { if (value === 'go') void loadGo() })
+
+async function previewGoSet(key: string) {
+  goBusy.value = true
+  goError.value = ''
+  try {
+    const res = await invoke<GoEnvSetResult>('runtime.goEnvSet', { key, value: goEdits[key] ?? '', dryRun: true })
+    goPreview[key] = res.change
+  } catch (error) { goError.value = error instanceof Error ? error.message : String(error) }
+  finally { goBusy.value = false }
+}
+
+function applyGoSet(key: string, unset: boolean) {
+  Modal.confirm({
+    title: unset ? `恢复 ${key} 为 go 默认？` : `写入 ${key}？`,
+    content: unset
+      ? '执行 go env -u，只影响本机 go 的用户配置，不改系统环境。'
+      : `执行 go env -w ${key}=${goEdits[key] ?? ''}。只写 go 用户配置（GOENV），不改系统 PATH/注册表。`,
+    okText: unset ? '恢复默认' : '应用', cancelText: '取消',
+    onOk: async () => {
+      goBusy.value = true
+      try {
+        const res = await invoke<GoEnvSetResult>('runtime.goEnvSet', { key, value: goEdits[key] ?? '', unset, confirm: true })
+        goEnv.value = res.report
+        goEdits[key] = res.report.values[key] ?? ''
+        goPreview[key] = undefined
+        message.success(unset ? `${key} 已恢复默认` : `${key} 已应用`)
+      } catch (error) { goError.value = error instanceof Error ? error.message : String(error) }
+      finally { goBusy.value = false }
+    },
+  })
+}
+
+function applyGoPreset(key: string, value: string) {
+  goEdits[key] = value
+  goPreview[key] = undefined
+}
+
+async function removeGo(inst: Installation) {
+  if (!state.value) return
+  goBusy.value = true
+  goError.value = ''
+  try {
+    const dry = await invoke<RemoveResult>('runtime.removeInstallation', {
+      id: inst.id, expectedRevision: state.value.revision, deleteFiles: inst.source === 'downloaded', dryRun: true,
+    })
+    const p = dry.preview
+    Modal.confirm({
+      title: p.willDeleteDir ? `卸载 Go ${inst.version}？` : `注销 Go ${inst.version} 的登记？`,
+      content: (p.willDeleteDir
+        ? `将删除产品自有目录 ${p.localHome} 并移除记录。`
+        : `仅移除登记记录，不删除外部目录 ${p.localHome}。`)
+        + (p.isDefault ? ' 它当前是全局默认，将一并清除。' : ''),
+      okText: p.willDeleteDir ? '卸载' : '注销', okButtonProps: { danger: true }, cancelText: '取消',
+      onOk: async () => {
+        goBusy.value = true
+        try {
+          const res = await invoke<RemoveResult>('runtime.removeInstallation', {
+            id: inst.id, expectedRevision: state.value!.revision, deleteFiles: inst.source === 'downloaded', confirm: true,
+          })
+          state.value = res.state
+          goInstallations.value = res.state.installations.filter((item) => item.runtime === 'golang')
+          message.success(res.dirDeleted ? '已卸载并删除目录' : '已注销登记')
+        } catch (error) { goError.value = error instanceof Error ? error.message : String(error) }
+        finally { goBusy.value = false }
+      },
+    })
+  } catch (error) { goError.value = error instanceof Error ? error.message : String(error) }
+  finally { goBusy.value = false }
+}
+
+function isGoDefault(inst: Installation): boolean {
+  return state.value?.globalSelections['golang']?.installationId === inst.id
+}
+
 function selectedLabel(runtime: string): string {
   const selection = state.value?.globalSelections[runtime]
   if (!selection || selection.status === 'empty') return '未选择'
@@ -156,6 +264,42 @@ onMounted(reload)
           <a-button v-for="item in state?.installations.filter((entry) => entry.runtime === tool) ?? []" :key="item.id" size="small" :disabled="!item.available || state?.globalSelections[tool]?.installationId === item.id" @click="setDefault(tool, item.id)">
             设为默认 {{ item.version || item.label || item.localHome }}
           </a-button>
+        </a-space>
+      </div>
+    </a-tab-pane>
+
+    <a-tab-pane key="go" tab="Go 管理">
+      <a-alert v-if="goError" type="error" show-icon closable :message="goError" class="page-alert" @close="goError = ''" />
+      <div class="group-actions"><a-button :loading="goBusy" @click="loadGo">刷新</a-button></div>
+      <template v-if="goEnv">
+        <div class="group-label">Go 环境配置</div>
+        <div class="source-box"><span>go</span><code>{{ goEnv.goBinary }}</code><a-tag>{{ goEnv.goVersion }}</a-tag><small>用户配置 {{ goEnv.envFile }}</small></div>
+        <div class="go-readonly">
+          <span v-for="key in goReadonlyKeys" :key="key" class="go-chip"><em>{{ key }}</em>{{ goEnv.values[key] || '—' }}</span>
+        </div>
+        <div v-for="key in goEnv.editable" :key="key" class="go-edit-row">
+          <div class="go-edit-head"><strong>{{ key }}</strong><small>当前 {{ goEnv.values[key] || '未设置' }}</small></div>
+          <div class="toolbar">
+            <a-input v-model:value="goEdits[key]" class="grow" :placeholder="key" @change="goPreview[key] = undefined" />
+            <a-select v-if="key === 'GOPROXY'" style="width: 190px" placeholder="代理预设" :options="goEnv.presets.map((p) => ({ label: p.label, value: p.value }))" @change="(value: unknown) => applyGoPreset(key, String(value))" />
+            <a-button :loading="goBusy" @click="previewGoSet(key)">预览</a-button>
+            <a-button type="primary" :loading="goBusy" @click="applyGoSet(key, false)">应用</a-button>
+            <a-button :loading="goBusy" :disabled="!goEnv.values[key]" @click="applyGoSet(key, true)">恢复默认</a-button>
+          </div>
+          <div v-if="goPreview[key]" class="go-preview"><code>{{ goPreview[key]?.from || '未设置' }}</code><span>→</span><code>{{ goPreview[key]?.to || '（清除）' }}</code></div>
+        </div>
+      </template>
+      <a-empty v-else-if="!goBusy" description="未找到 go。请先在「获取运行时」安装，或「发现与登记」登记一个 Go。" />
+      <a-divider />
+      <div class="group-label">Go 版本管理</div>
+      <a-empty v-if="!goInstallations.length" description="尚无 Go 安装记录；可在「获取运行时」下载或「发现与登记」登记。" />
+      <div v-for="inst in goInstallations" :key="inst.id" class="runtime-pref-row">
+        <div><strong>Go {{ inst.version || inst.label || '版本未知' }}</strong><small>{{ inst.localHome }}</small></div>
+        <a-space wrap>
+          <a-tag :color="inst.source === 'downloaded' ? 'blue' : 'default'">{{ inst.source === 'downloaded' ? '已下载' : '已登记' }}</a-tag>
+          <a-tag v-if="isGoDefault(inst)" color="green">全局默认</a-tag>
+          <a-button size="small" :disabled="isGoDefault(inst) || !inst.available" @click="setDefault('golang', inst.id)">设为默认</a-button>
+          <a-button size="small" danger @click="removeGo(inst)">{{ inst.source === 'downloaded' ? '卸载' : '注销' }}</a-button>
         </a-space>
       </div>
     </a-tab-pane>
@@ -218,5 +362,15 @@ onMounted(reload)
 <style scoped>
 .group-label{font-weight:600;font-size:13.5px;color:var(--text-title);margin:0 0 10px}
 .group-actions{display:flex;justify-content:flex-end;gap:9px;margin-bottom:14px}
-.runtime-pref-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 0;border-top:1px solid var(--border-soft)}.runtime-pref-row strong,.runtime-pref-row small{display:block;overflow-wrap:anywhere}.runtime-pref-row small{margin-top:5px;color:var(--text-muted)}.source-box{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:18px;padding:12px 14px;border-radius:8px;background:var(--bg-soft)}.source-box code{overflow-wrap:anywhere;color:var(--text-code)}.candidate-list{display:block}.candidate-row{display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px solid var(--border-soft)}.candidate-row>div{flex:1;min-width:0}.candidate-row strong,.candidate-row small{display:block;overflow-wrap:anywhere}.candidate-row small{margin-top:4px;color:var(--text-muted)}.settings-tabs :deep(.ant-tabs-tab){padding:8px 4px}@media(max-width:640px){.runtime-pref-row{align-items:flex-start;flex-direction:column}.candidate-row{align-items:flex-start}}
+.runtime-pref-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 0;border-top:1px solid var(--border-soft)}.runtime-pref-row strong,.runtime-pref-row small{display:block;overflow-wrap:anywhere}.runtime-pref-row small{margin-top:5px;color:var(--text-muted)}.source-box{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:18px;padding:12px 14px;border-radius:8px;background:var(--bg-soft)}.source-box code{overflow-wrap:anywhere;color:var(--text-code)}.candidate-list{display:block}.candidate-row{display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px solid var(--border-soft)}.candidate-row>div{flex:1;min-width:0}.candidate-row strong,.candidate-row small{display:block;overflow-wrap:anywhere}.candidate-row small{margin-top:4px;color:var(--text-muted)}.settings-tabs :deep(.ant-tabs-tab){padding:8px 4px}
+.go-readonly{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}
+.go-chip{display:inline-flex;align-items:center;gap:8px;padding:4px 10px;border-radius:6px;background:var(--bg-chip);font-size:12px;color:var(--text-code);overflow-wrap:anywhere}
+.go-chip em{font-style:normal;color:var(--text-muted)}
+.go-edit-row{padding:12px 0;border-top:1px solid var(--border-soft)}
+.go-edit-head{display:flex;align-items:baseline;gap:12px;margin-bottom:8px}
+.go-edit-head strong{color:var(--text-title);font-size:13.5px}
+.go-edit-head small{color:var(--text-muted);overflow-wrap:anywhere}
+.go-preview{display:flex;align-items:center;gap:8px;margin-top:8px;color:var(--text-muted);font-size:12.5px}
+.go-preview code{color:var(--text-code);overflow-wrap:anywhere}
+.go-preview span{color:var(--text-muted)}@media(max-width:640px){.runtime-pref-row{align-items:flex-start;flex-direction:column}.candidate-row{align-items:flex-start}}
 </style>
