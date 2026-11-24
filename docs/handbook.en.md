@@ -31,7 +31,13 @@ Verify against `SHA256SUMS` in the same release.
 2. Open a project to see runtime requirements and the current Git identity.
 3. When installing or switching runtimes, review the preview plan (version, mirror, checksum, target, size), then confirm.
 4. Applying a Git identity is also preview-first; apply is a **full overwrite** (managed keys missing from the profile are cleared).
-5. Theme can follow the system, or be fixed to light / dark in settings.
+5. Theme can follow the system, or be fixed to light / dark in settings, or use a custom accent color.
+6. Settings also holds a "source projects" list: local entries are machine-only, shared entries can
+   travel with a snapshot, never point inside the user home directory, and never carry identity
+   selections or credentials.
+7. Settings shows runtime tool status (read-only probing: no tool is executed, real PATH is untouched).
+8. Settings can export a session snapshot: appearance and shared projects only, backed up before
+   import, and importing the same digest twice adds no new record.
 
 Note: the GUI **cannot** rewrite an already-open parent terminal. New sessions and child processes launched by the tool pick up the selected environment.
 

@@ -111,6 +111,14 @@
     color-scheme: dark;
   }
 }
+/* 自定义主题沿用浅色底，强调色由 theme.ts 在 :root 上动态覆盖。
+   只覆盖 --accent / --accent-mark，不复制整张变量表，避免与浅色/深色漂移。 */
+html[data-theme="custom"] {
+  color-scheme: light;
+}
+html[data-theme="custom"].dark {
+  color-scheme: dark;
+}
 html[data-theme="dark"] {
   --chassis: #141311;
   --chrome: #1a1816;
@@ -423,6 +431,30 @@ button, input, textarea { font-family: inherit; }
 .kv-actions { display: flex; gap: 6px; }
 .linkish { border: 0; background: transparent; padding: 0; color: var(--accent-strong); height: auto; text-align: left; }
 
+/* 设置页新增分区：自定义色、源项目清单、运行时状态、会话快照 */
+.theme-custom { display: flex; align-items: center; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+.theme-custom-label { color: var(--text-muted); font-size: 12.5px; }
+.theme-swatch { width: 30px; height: 30px; padding: 0; border: 1px solid var(--rule); border-radius: 4px; background: var(--stage-raised); cursor: pointer; }
+.theme-swatch:disabled { opacity: .5; cursor: not-allowed; }
+.source-list { margin-top: 12px; border: 1px solid var(--rule); border-radius: 6px; background: var(--stage-raised); }
+.source-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 12px; align-items: center; padding: 9px 12px; border-top: 1px solid var(--rule); }
+.source-row:first-child { border-top: 0; }
+.source-path { font-family: var(--mono); font-size: 12px; overflow-wrap: anywhere; }
+.source-meta { display: flex; gap: 8px; align-items: center; }
+.source-empty { padding: 14px 12px; color: var(--text-muted); font-size: 12.5px; }
+.source-form { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; align-items: flex-end; }
+.source-form .ant-form-item { margin-bottom: 0; }
+.source-form-path { flex: 1 1 280px; min-width: 0; }
+.source-form-label { flex: 0 1 150px; }
+.source-form-binding { flex: 0 0 130px; min-width: 0; }
+.tool-status-list { margin-top: 12px; border: 1px solid var(--rule); border-radius: 6px; background: var(--stage-raised); }
+.tool-status-row { display: grid; grid-template-columns: 128px 92px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 8px 12px; border-top: 1px solid var(--rule); }
+.tool-status-row:first-child { border-top: 0; }
+.tool-status-name { display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; }
+.tool-status-version { font-family: var(--mono); font-size: 12px; overflow-wrap: anywhere; }
+.tool-status-note { color: var(--text-muted); font-size: 11.5px; }
+.snapshot-bar { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; align-items: center; }
+.snapshot-file { display: none; }
 .page-alert { margin-bottom: 12px; }
 .section { padding: 16px 0 4px; }
 .section-title { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 12px; }

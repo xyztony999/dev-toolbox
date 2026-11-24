@@ -17,6 +17,7 @@ import (
 	"strings"
 	"time"
 
+	"dev-toolbox/internal/clientsettings"
 	"dev-toolbox/internal/gitidentity"
 	"dev-toolbox/internal/project"
 	"dev-toolbox/internal/runtimecatalog"
@@ -163,6 +164,80 @@ func invoke(req request) response {
 	var data any
 	var err error
 	switch req.Operation {
+	case "settings.get":
+		data, err = clientsettings.Get()
+	case "settings.toolStatuses":
+		data = clientsettings.ToolStatuses(ctx, clientsettings.ToolStatusOptions{AllowPathLookup: true})
+	case "settings.setTheme":
+		var p struct {
+			Mode             string `json:"mode"`
+			Accent           string `json:"accent"`
+			ExpectedRevision uint64 `json:"expectedRevision"`
+		}
+		if err = decode(req.Payload, &p); err == nil {
+			var updated clientsettings.Settings
+			updated, err = clientsettings.SetTheme(clientsettings.ThemeMode(p.Mode), p.Accent, p.ExpectedRevision)
+			data = updated
+		}
+	case "settings.addSourceProject":
+		var p struct {
+			Path             string `json:"path"`
+			Label            string `json:"label"`
+			Note             string `json:"note"`
+			Binding          string `json:"binding"`
+			ExpectedRevision uint64 `json:"expectedRevision"`
+		}
+		if err = decode(req.Payload, &p); err == nil {
+			var updated clientsettings.Settings
+			updated, err = clientsettings.AddSourceProject(p.Path, p.Label, p.Note, clientsettings.ProjectBinding(p.Binding), p.ExpectedRevision)
+			data = updated
+		}
+	case "settings.removeSourceProject":
+		var p struct {
+			Path             string `json:"path"`
+			ExpectedRevision uint64 `json:"expectedRevision"`
+		}
+		if err = decode(req.Payload, &p); err == nil {
+			var updated clientsettings.Settings
+			var removed bool
+			updated, removed, err = clientsettings.RemoveSourceProject(p.Path, p.ExpectedRevision)
+			data = map[string]any{"settings": updated, "removed": removed}
+		}
+	case "settings.exportSnapshot":
+		var p struct {
+			Label                 string `json:"label"`
+			IncludeSharedProjects bool   `json:"includeSharedProjects"`
+		}
+		if err = decode(req.Payload, &p); err == nil {
+			var snap clientsettings.Snapshot
+			var payload []byte
+			snap, err = clientsettings.ExportSnapshot(p.Label, p.IncludeSharedProjects)
+			if err == nil {
+				payload, err = clientsettings.SnapshotBytes(snap)
+				if err == nil {
+					data = map[string]any{"snapshot": snap, "payload": string(payload)}
+				}
+			}
+		}
+	case "settings.importSnapshot":
+		var p struct {
+			Payload          string `json:"payload"`
+			Confirm          bool   `json:"confirm"`
+			ConfirmBackup    bool   `json:"confirmBackup"`
+			ExpectedRevision uint64 `json:"expectedRevision"`
+		}
+		if err = decode(req.Payload, &p); err == nil {
+			if !p.Confirm {
+				err = errors.New("CONFIRMATION_REQUIRED")
+			} else {
+				var updated clientsettings.Settings
+				var record clientsettings.SnapshotRecord
+				updated, record, err = clientsettings.ImportSnapshot([]byte(p.Payload), p.ExpectedRevision)
+				if err == nil {
+					data = map[string]any{"settings": updated, "record": record, "backedUp": p.ConfirmBackup}
+				}
+			}
+		}
 	case "project.list":
 		data, err = project.List()
 	case "project.scanToolVersion":
@@ -792,7 +867,7 @@ func invoke(req request) response {
 	return response{RequestID: req.RequestID, OK: true, Data: data}
 }
 
-const clientVersion = "0.1.2"
+const clientVersion = "0.2.0"
 
 func clientInfo() (map[string]string, error) {
 	base, err := os.UserConfigDir()

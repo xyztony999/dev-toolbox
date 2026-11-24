@@ -71,6 +71,14 @@ const legacyPreview = {
   backupDirectory: 'C:/Users/demo/AppData/Roaming/DevToolbox/backups/devswitch',
 }
 
+// digestString 复用字符串摘要，演示版只需稳定即可。
+function digestString(value: string): string {
+  let hash = 0
+  for (let index = 0; index < value.length; index += 1) {
+    hash = (hash * 31 + value.charCodeAt(index)) | 0
+  }
+  return Math.abs(hash).toString(16).padStart(8, "0") + value.length.toString(16)
+}
 function copy<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T
 }
@@ -236,6 +244,18 @@ const demoToolConfigs: Record<string, { binary?: string; note?: string; items: D
   rust: { items: [{ key: 'cargo.mirror', label: 'cargo 镜像（replace-with）', value: '', editable: false, source: '~/.cargo/config.toml（只读）', note: 'cargo 镜像需手工编辑 config.toml 的 [source] 段。' }] },
 }
 
+const clientSettings = {
+  schema: 1,
+  revision: 1,
+  theme: 'system',
+  customAccent: '',
+  sourceProjects: [
+    { path: 'D:/Demo/ToolboxFixture', label: '演示源项目', binding: 'local', note: '' },
+  ] as Array<{ path: string; label?: string; binding: string; note?: string }>,
+  snapshots: [] as Array<{ sourceDigest: string; label?: string; backupPath?: string; importedAt: string; applied: number; skipped: number }>,
+}
+
+
 export async function mockInvoke(operation: string, payload: Record<string, unknown>): Promise<unknown> {
   switch (operation) {
     case 'project.list':
@@ -244,7 +264,7 @@ export async function mockInvoke(operation: string, payload: Record<string, unkn
       return { version: SCAN_TOOL_VERSION }
     case 'app.info':
       return {
-        version: '0.1.2',
+        version: '0.2.0',
         scanToolVersion: SCAN_TOOL_VERSION,
         configDir: 'C:/Users/demo/AppData/Roaming/DevToolbox',
         projectStore: 'C:/Users/demo/AppData/Roaming/DevToolbox/projects.json',
@@ -581,6 +601,90 @@ export async function mockInvoke(operation: string, payload: Record<string, unkn
     case 'session.open':
       if (!payload.confirm) throw new Error('CONFIRMATION_REQUIRED')
       return { terminalId: String(payload.terminalId ?? 'powershell'), pid: 4242 }
+    case 'settings.get':
+      return copy(clientSettings)
+    case 'settings.toolStatuses': {
+      const configured = userRuntimeState.installations.filter((item) => userRuntimeState.globalSelections[item.runtime]?.installationId === item.id)
+      const configuredTools = configured.map((item) => ({
+        tool: item.runtime,
+        available: item.available,
+        version: item.available ? item.version : 'unknown',
+        home: item.localHome,
+        source: 'user',
+        configurable: ['golang', 'node', 'python', 'maven'].includes(item.runtime),
+        configNote: ['golang', 'node', 'python', 'maven'].includes(item.runtime) ? '可由本产品写入工具原生用户配置' : '只读；请使用工具自身的配置文件',
+      }))
+      const rest = ['node', 'java', 'maven', 'gradle', 'androidsdk', 'golang', 'python', 'rust']
+        .filter((tool) => !configured.some((item) => item.runtime === tool))
+        .map((tool) => ({
+          tool,
+          available: false,
+          source: 'none',
+          configurable: ['golang', 'node', 'python', 'maven'].includes(tool),
+          configNote: ['golang', 'node', 'python', 'maven'].includes(tool) ? '可由本产品写入工具原生用户配置' : '只读；请使用工具自身的配置文件',
+        }))
+      return [...configuredTools, ...rest]
+    }
+    case 'settings.setTheme': {
+      const mode = String(payload.mode ?? 'system')
+      if (mode === 'neon') throw new Error('CLIENT_SETTINGS_THEME_INVALID')
+      clientSettings.theme = mode
+      if (mode === 'custom') {
+        const accent = String(payload.accent ?? '')
+        if (!/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(accent)) throw new Error('CLIENT_SETTINGS_ACCENT_INVALID')
+        clientSettings.customAccent = accent
+      } else {
+        clientSettings.customAccent = ''
+      }
+      clientSettings.revision += 1
+      return copy(clientSettings)
+    }
+    case 'settings.addSourceProject': {
+      const rawPath = String(payload.path ?? '').trim()
+      if (!rawPath || rawPath.includes('://')) throw new Error('CLIENT_SETTINGS_PATH_INVALID')
+      const path = rawPath.replace(/\\/g, '/')
+      if (clientSettings.sourceProjects.some((item) => item.path.toLowerCase() === path.toLowerCase())) throw new Error('CLIENT_SETTINGS_PATH_INVALID: already registered')
+      const binding = String(payload.binding ?? 'local')
+      if (!['local', 'shared'].includes(binding)) throw new Error('CLIENT_SETTINGS_BINDING_INVALID')
+      clientSettings.sourceProjects.push({ path, label: String(payload.label ?? ''), binding, note: String(payload.note ?? '') })
+      clientSettings.revision += 1
+      return copy(clientSettings)
+    }
+    case 'settings.removeSourceProject': {
+      const path = String(payload.path ?? '').trim().replace(/\\/g, '/')
+      const index = clientSettings.sourceProjects.findIndex((item) => item.path.toLowerCase() === path.toLowerCase())
+      if (index < 0) return { settings: copy(clientSettings), removed: false }
+      clientSettings.sourceProjects.splice(index, 1)
+      clientSettings.revision += 1
+      return { settings: copy(clientSettings), removed: true }
+    }
+    case 'settings.exportSnapshot': {
+      const shared = clientSettings.sourceProjects.filter((item) => item.binding === 'shared')
+      const draft = {
+        schema: 1,
+        label: String(payload.label ?? ''),
+        exportedAt: now(),
+        theme: clientSettings.theme,
+        customAccent: clientSettings.customAccent,
+        sourceProjects: payload.includeSharedProjects ? clientSettings.sourceProjects : shared,
+      }
+      const digest = 'demo-' + digestString(JSON.stringify(draft))
+      const snapshot = { ...draft, digest }
+      return { snapshot, payload: JSON.stringify(snapshot, null, 2) }
+    }
+    case 'settings.importSnapshot': {
+      if (!payload.confirm) throw new Error('CONFIRMATION_REQUIRED')
+      const snapshot = JSON.parse(String(payload.payload ?? '{}'))
+      if (!snapshot?.schema || !snapshot?.digest) throw new Error('CLIENT_SETTINGS_SNAPSHOT_INVALID')
+      const existing = clientSettings.snapshots.find((item) => item.sourceDigest === snapshot.digest)
+      if (existing) return { settings: copy(clientSettings), record: existing, backedUp: false }
+      clientSettings.theme = snapshot.theme ?? clientSettings.theme
+      clientSettings.customAccent = snapshot.customAccent ?? ''
+      clientSettings.revision += 1
+      const record = { sourceDigest: snapshot.digest, label: snapshot.label ?? '', backupPath: 'demo-backups/' + snapshot.digest, importedAt: now(), applied: 1, skipped: 0 }
+      clientSettings.snapshots.push(record)
+      return { settings: copy(clientSettings), record, backedUp: !!payload.confirmBackup }
+    }
     default:
       throw new Error(`演示桥接不支持操作：${operation}`)
   }
