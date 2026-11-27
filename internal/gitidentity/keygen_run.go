@@ -246,7 +246,8 @@ func gpgToolHomePath(home, bin string) string {
 }
 
 func looksLikeMSYSBinary(path string) bool {
-	p := strings.ToLower(filepath.ToSlash(path))
+	// Normalize manually so Windows-style paths still match when tests run on Linux.
+	p := strings.ToLower(strings.ReplaceAll(path, `\`, `/`))
 	return strings.Contains(p, "/git/") ||
 		strings.Contains(p, "/msys") ||
 		strings.Contains(p, "/usr/bin/gpg") ||
