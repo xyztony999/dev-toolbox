@@ -254,7 +254,9 @@ func looksLikeMSYSBinary(path string) bool {
 }
 
 func windowsPathToMSYS(p string) string {
-	p = filepath.ToSlash(p)
+	// Do not use filepath.ToSlash: on non-Windows builders (and in unit tests
+	// that feed Windows-style strings) backslash is not a separator.
+	p = strings.ReplaceAll(p, `\`, `/`)
 	if len(p) >= 2 && p[1] == ':' {
 		return "/" + strings.ToLower(string(p[0])) + p[2:]
 	}
