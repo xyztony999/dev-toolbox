@@ -135,6 +135,17 @@ const saveProfile = (profile: GitProfile) => guard('save', async () => {
   await reloadProfiles()
 })
 
+/** 密钥 create/select 已由服务端写档案签名字段；同步列表与当前编辑对象，不关抽屉。 */
+function onProfileSigningApplied(profile: GitProfile) {
+  const index = profiles.value.findIndex((item) => item.id === profile.id)
+  if (index >= 0) {
+    profiles.value[index] = { ...profiles.value[index], ...profile }
+  }
+  if (editingProfile.value?.id === profile.id) {
+    editingProfile.value = { ...editingProfile.value, ...profile }
+  }
+}
+
 function removeProfile(profile: GitProfile) {
   const ruleCount = profile.gitdirs?.length ?? 0
   Modal.confirm({
@@ -440,7 +451,7 @@ onMounted(() => guard('bootstrap', async () => {
           <a-button size="small" danger @click="removeProfile(profile)">删除</a-button>
         </div>
       </div>
-      <ProfileEditor v-model:open="editorOpen" :profile="editingProfile" :saving="pending === 'save'" :error="editorError" @save="saveProfile" />
+      <ProfileEditor v-model:open="editorOpen" :profile="editingProfile" :saving="pending === 'save'" :error="editorError" @save="saveProfile" @applied="onProfileSigningApplied" />
     </a-tab-pane>
 
     <a-tab-pane key="scope" tab="生效范围">

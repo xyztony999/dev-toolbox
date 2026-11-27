@@ -78,3 +78,21 @@ Git 身份枚举（D3 git-identity-migration v1.0）：
 | TerminalId | powershell | PowerShell |
 | TerminalId | cmd | 命令提示符 |
 | TerminalId | bash | Bash（Windows 为 Git Bash） |
+
+Git 身份密钥生成枚举（D3 git-gpg-keygen v1.0）：
+
+| enum | code | label |
+|---|---|---|
+| GitKeyType | openpgp | OpenPGP |
+| GitKeyType | ssh | SSH 签名 |
+| GitKeyAlgorithm | ed25519 | Ed25519 |
+| GitKeyAlgorithm | rsa4096 | RSA 4096 |
+| GitKeyAlgorithm | rsa3072 | RSA 3072 |
+| GitKeyAlgorithm | nistp256 | NIST P-256 |
+| GitKeyAlgorithm | ecdsa256 | ECDSA P-256 |
+| GitKeyExpiry | never | 永不过期 |
+| GitKeyExpiry | 1y | 1 年 |
+| GitKeyExpiry | 2y | 2 年 |
+| GitKeyExpiry | 5y | 5 年 |
+
+合法组合：openpgp × {ed25519,rsa4096,rsa3072,nistp256} × {never,1y,2y,5y}；ssh × {ed25519,rsa4096,ecdsa256} × {never}。既有 GitSigningFormat 不变。

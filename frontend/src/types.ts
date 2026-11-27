@@ -322,3 +322,84 @@ export interface GitCredentialEntry {
   host: string
   username?: string
 }
+
+/** git-gpg-keygen：密钥类型 / 算法 / 有效期（与 common-enums 一致） */
+export type GitKeyType = 'openpgp' | 'ssh'
+export type GitKeyAlgorithm = 'ed25519' | 'rsa4096' | 'rsa3072' | 'nistp256' | 'ecdsa256'
+export type GitKeyExpiry = 'never' | '1y' | '2y' | '5y'
+
+export interface KeygenToolStatus {
+  keyType: GitKeyType
+  available: boolean
+  executablePath?: string
+  version?: string
+}
+
+export interface KeygenOptions {
+  tools: KeygenToolStatus[]
+  algorithms: Array<{ keyType: GitKeyType; values: GitKeyAlgorithm[] }>
+  expiries: Array<{ keyType: GitKeyType; values: GitKeyExpiry[]; default: GitKeyExpiry }>
+  defaults: {
+    openpgp: { algorithm: GitKeyAlgorithm; expiry: GitKeyExpiry }
+    ssh: { algorithm: GitKeyAlgorithm; expiry: GitKeyExpiry }
+  }
+  /** 演示/宿主可选：SSH 默认私钥路径提示（无后缀） */
+  sshDefaultPathHint?: string
+}
+
+export interface KeygenCreateRequest {
+  profileId: string
+  keyType: GitKeyType
+  algorithm?: GitKeyAlgorithm
+  expiry?: GitKeyExpiry
+  passphrase?: string
+  enableGpgSign?: boolean
+  comment?: string
+  outputPath?: string
+  dryRun?: boolean
+  confirm?: boolean
+}
+
+export interface KeygenPlan {
+  profileId: string
+  keyType: GitKeyType
+  toolPath: string
+  commandSummary: string[]
+  profilePatch: { signingKey: string; gpgFormat: string; gpgSign: boolean }
+  warnings: string[]
+  wouldFail?: string
+}
+
+export interface KeygenResult {
+  profile: GitProfile
+  keyType: GitKeyType
+  signingKey: string
+  fingerprint?: string
+  publicKeyPath?: string
+  publicKeyPreview?: string
+  localKeyCreated: boolean
+  profileUpdated: boolean
+  warning?: string
+}
+
+export interface LocalKeySummary {
+  keyType: GitKeyType
+  id: string
+  fingerprint: string
+  uidOrComment: string
+  publicKeyPath?: string
+  createdAt?: string
+}
+
+export interface KeyExportRequest {
+  keyType: GitKeyType
+  id: string
+  writePath?: string
+  overwrite?: boolean
+  confirm?: boolean
+}
+
+export interface PublicKeyExport {
+  text: string
+  writtenPath?: string
+}

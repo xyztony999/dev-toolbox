@@ -12,6 +12,8 @@ package clientsettings
 import (
 	"errors"
 	"time"
+
+	"dev-toolbox/internal/project"
 )
 
 // ThemeMode 是客户端外观偏好；custom 需要配合 CustomAccent 使用。
@@ -32,30 +34,6 @@ func (t ThemeMode) Valid() bool {
 	return false
 }
 
-// ProjectBinding 表示一个源项目的登记方式：local 只在本机有意义，shared 可随清单分发。
-type ProjectBinding string
-
-const (
-	BindingLocal  ProjectBinding = "local"
-	BindingShared ProjectBinding = "shared"
-)
-
-func (b ProjectBinding) Valid() bool {
-	switch b {
-	case BindingLocal, BindingShared:
-		return true
-	}
-	return false
-}
-
-// SourceProject 是用户登记的源项目路径。它不保存任何凭据或个人身份选择。
-type SourceProject struct {
-	Path    string         `json:"path"`
-	Label   string         `json:"label,omitempty"`
-	Binding ProjectBinding `json:"binding"`
-	Note    string         `json:"note,omitempty"`
-}
-
 // SnapshotRecord 记录一次会话快照导入，幂等：同一摘要重复导入只计入 skipped。
 type SnapshotRecord struct {
 	SourceDigest string    `json:"sourceDigest"`
@@ -68,23 +46,23 @@ type SnapshotRecord struct {
 
 // Settings 是客户端偏好文件的结构。
 type Settings struct {
-	Schema         int              `json:"schema"`
-	Revision       uint64           `json:"revision"`
-	Theme          ThemeMode        `json:"theme"`
-	CustomAccent   string           `json:"customAccent,omitempty"`
-	SourceProjects []SourceProject  `json:"sourceProjects"`
-	Snapshots      []SnapshotRecord `json:"snapshots"`
+	Schema       int              `json:"schema"`
+	Revision     uint64           `json:"revision"`
+	Theme        ThemeMode        `json:"theme"`
+	CustomAccent string           `json:"customAccent,omitempty"`
+	Snapshots    []SnapshotRecord `json:"snapshots"`
 }
 
-// Snapshot 是可导出的会话状态：只包含客户端自身偏好，不含 token / 身份选择。
+// Snapshot 是可导出的会话状态：只含客户端偏好与共享要求，
+// 不含本地路径、仓库身份或凭据。
 type Snapshot struct {
-	Schema         int             `json:"schema"`
-	Label          string          `json:"label,omitempty"`
-	ExportedAt     time.Time       `json:"exportedAt"`
-	Theme          ThemeMode       `json:"theme"`
-	CustomAccent   string          `json:"customAccent,omitempty"`
-	SourceProjects []SourceProject `json:"sourceProjects"`
-	Digest         string          `json:"digest"`
+	Schema       int                      `json:"schema"`
+	Label        string                   `json:"label,omitempty"`
+	ExportedAt   time.Time                `json:"exportedAt"`
+	Theme        ThemeMode                `json:"theme"`
+	CustomAccent string                   `json:"customAccent,omitempty"`
+	Requirements []project.ProjectSummary `json:"requirements,omitempty"`
+	Digest       string                   `json:"digest"`
 }
 
 var (
@@ -93,8 +71,6 @@ var (
 	ErrConfirm     = errors.New("CONFIRMATION_REQUIRED")
 	ErrBadTheme    = errors.New("CLIENT_SETTINGS_THEME_INVALID")
 	ErrBadAccent   = errors.New("CLIENT_SETTINGS_ACCENT_INVALID")
-	ErrBadBinding  = errors.New("CLIENT_SETTINGS_BINDING_INVALID")
-	ErrBadPath     = errors.New("CLIENT_SETTINGS_PATH_INVALID")
 	ErrBadDigest   = errors.New("CLIENT_SETTINGS_DIGEST_MISMATCH")
 	ErrBadSnapshot = errors.New("CLIENT_SETTINGS_SNAPSHOT_INVALID")
 )

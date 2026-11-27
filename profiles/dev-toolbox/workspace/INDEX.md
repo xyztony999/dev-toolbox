@@ -79,6 +79,19 @@ modules:
     gates:
       gate1: {status: pass, note: 2026-10-28 git-identity-migration D0-D4 PASS；详见 gate1-git-identity-migration-2026-10-28.md}
       gate2: {status: warn, note: 2026-10-28 自动化链路全过（GR-01..06/WV/GC + 沙箱行为对比）；真实凭据 helper 交互与重启后人工点验待用户；详见 gate2-git-identity-migration-2026-10-28.md}
+  - name: git-gpg-keygen
+    title: Git 身份密钥生成（OpenPGP / SSH 签名）
+    domain: git
+    stages:
+      requirement: {status: complete, note: D0-D2 v1.0；BA/AA/FL + PRD/领域模型；工程默认见 prd §7}
+      api: {status: complete, note: D3 git.keygen*/keyList/keySelect/keyExport 六操作契约 v1.0}
+      interaction: {status: complete, note: D4 档案编辑「提交签名」内嵌生成/选用/导出 PageSpec v1.0}
+      backend: {status: complete, note: KeygenService 六操作 + CLI git keygen + 桌面桥接白名单；沙箱隔离 GNUPGHOME/SSH；Windows 真机 gpg/ssh-keygen 测试通过；GUI tag 受 clientsettings 漂移阻塞（见 Gate 2 WARN）}
+      frontend: {status: complete, note: 档案编辑「提交签名」挂 KeygenPanel（生成/选用/导出）；types+dev-mock 六操作；typecheck 与 build:desktop 通过；可与后端桥接联调}
+      validation: {status: complete, note: Gate 2 WARN（W1）— CLI/契约/typecheck 通过；GUI 编译与部分成功 Data 消费待修}
+    gates:
+      gate1: {status: warn, note: 2026-11-27 D0-D4 WARN（W1 可继续）；文案/命名表层建议见 gate1-git-gpg-keygen-2026-11-27.md}
+      gate2: {status: warn, note: 2026-11-27 自动化主路径通过（W1）；GUI clientsettings 漂移与部分成功桥接 Data 丢弃见 gate2-git-gpg-keygen-2026-11-27.md}
   - name: toolchain-import
     title: uv/rustup 外部工具链检测与登记
     domain: runtime

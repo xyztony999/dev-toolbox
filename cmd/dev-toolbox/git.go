@@ -15,7 +15,7 @@ import (
 // operations need --confirm exactly like the other CLI domains.
 func runGitIdentity(ctx context.Context, args []string) int {
 	if len(args) == 0 {
-		return usage("git <profiles|save-profile|remove-profile|import-global|use|current|bind|unbind|unset|scan|audit|doctor|remote|credential|legacy> [args]")
+		return usage("git <profiles|save-profile|remove-profile|import-global|use|current|bind|unbind|unset|scan|audit|doctor|remote|credential|legacy|keygen> [args]")
 	}
 	store, err := gitidentity.Load()
 	if err != nil {
@@ -129,8 +129,10 @@ func runGitIdentity(ctx context.Context, args []string) int {
 		return gitCredential(ctx, store, rest)
 	case "legacy":
 		return gitLegacy(ctx, store, rest)
+	case "keygen":
+		return gitKeygen(ctx, store, rest)
 	default:
-		return usage("git <profiles|save-profile|remove-profile|import-global|use|current|bind|unbind|unset|scan|audit|doctor|remote|credential|legacy> [args]")
+		return usage("git <profiles|save-profile|remove-profile|import-global|use|current|bind|unbind|unset|scan|audit|doctor|remote|credential|legacy|keygen> [args]")
 	}
 }
 
@@ -483,4 +485,135 @@ func gitLegacy(ctx context.Context, store *gitidentity.Store, args []string) int
 func reportStr(message string) int {
 	fmt.Fprintln(os.Stderr, message)
 	return 5
+}
+
+func gitKeygen(ctx context.Context, store *gitidentity.Store, args []string) int {
+	if len(args) == 0 {
+		return usage("git keygen <options|preview|create|list|select|export> [args]")
+	}
+	tools := gitidentity.KeygenTools{}
+	switch args[0] {
+	case "options":
+		return output(gitidentity.KeygenOptionsProbe(ctx, tools))
+	case "preview":
+		req, err := parseKeygenCreateArgs(args[1:], false)
+		if err != nil {
+			return usage(err.Error())
+		}
+		plan, err := gitidentity.KeygenPreview(ctx, store, tools, req)
+		if err != nil {
+			return report(err)
+		}
+		return output(plan)
+	case "create":
+		req, err := parseKeygenCreateArgs(args[1:], true)
+		if err != nil {
+			return usage(err.Error())
+		}
+		if hasFlag(args[1:], "--passphrase-stdin") {
+			line, readErr := bufio.NewReader(os.Stdin).ReadString('\n')
+			if readErr != nil && len(strings.TrimSpace(line)) == 0 {
+				return report(fmt.Errorf("GIT_KEYGEN_PARAMS_INVALID: 无法从 stdin 读取口令"))
+			}
+			req.Passphrase = strings.TrimRight(line, "\r\n")
+		}
+		result, err := gitidentity.KeygenCreate(ctx, store, tools, req)
+		if err != nil {
+			var partial *gitidentity.KeygenProfileWriteError
+			if errorsAsKeygenPartial(err, &partial) {
+				_ = output(partial.Result)
+				return report(err)
+			}
+			return report(err)
+		}
+		return output(result)
+	case "list":
+		keyType := flagValue(args[1:], "--type")
+		if keyType == "" {
+			return usage("git keygen list --type openpgp|ssh")
+		}
+		list, err := gitidentity.KeyList(ctx, tools, keyType)
+		if err != nil {
+			return report(err)
+		}
+		return output(list)
+	case "select":
+		rest := args[1:]
+		profileID := flagValue(rest, "--profile")
+		keyType := flagValue(rest, "--type")
+		id := flagValue(rest, "--id")
+		if profileID == "" || keyType == "" || id == "" || !hasFlag(rest, "--confirm") {
+			return usage("git keygen select --profile <id> --type openpgp|ssh --id <fingerprint-or-path> --confirm [--no-gpgsign]")
+		}
+		var enable *bool
+		if hasFlag(rest, "--no-gpgsign") {
+			off := false
+			enable = &off
+		}
+		result, err := gitidentity.KeySelect(ctx, store, tools, profileID, keyType, id, enable, true)
+		if err != nil {
+			var partial *gitidentity.KeygenProfileWriteError
+			if errorsAsKeygenPartial(err, &partial) {
+				_ = output(partial.Result)
+				return report(err)
+			}
+			return report(err)
+		}
+		return output(result)
+	case "export":
+		rest := args[1:]
+		keyType := flagValue(rest, "--type")
+		id := flagValue(rest, "--id")
+		if keyType == "" || id == "" {
+			return usage("git keygen export --type openpgp|ssh --id <fingerprint-or-path> [--out path --confirm --overwrite]")
+		}
+		req := gitidentity.KeyExportRequest{
+			KeyType:   keyType,
+			ID:        id,
+			WritePath: flagValue(rest, "--out"),
+			Overwrite: hasFlag(rest, "--overwrite"),
+			Confirm:   hasFlag(rest, "--confirm"),
+		}
+		exported, err := gitidentity.KeyExport(ctx, tools, req)
+		if err != nil {
+			return report(err)
+		}
+		return output(exported)
+	default:
+		return usage("git keygen <options|preview|create|list|select|export> [args]")
+	}
+}
+
+func parseKeygenCreateArgs(args []string, requireConfirm bool) (gitidentity.KeygenCreateRequest, error) {
+	req := gitidentity.KeygenCreateRequest{
+		ProfileID:  flagValue(args, "--profile"),
+		KeyType:    flagValue(args, "--type"),
+		Algorithm:  flagValue(args, "--algo"),
+		Expiry:     flagValue(args, "--expiry"),
+		Comment:    flagValue(args, "--comment"),
+		OutputPath: flagValue(args, "--output"),
+		Confirm:    hasFlag(args, "--confirm"),
+	}
+	if req.ProfileID == "" || req.KeyType == "" {
+		return req, fmt.Errorf("git keygen preview|create --profile <id> --type openpgp|ssh [--algo ...] [--expiry ...] [--output path] [--comment c] [--passphrase-stdin] [--no-gpgsign] [--confirm]")
+	}
+	if requireConfirm && !req.Confirm {
+		return req, fmt.Errorf("git keygen create needs --confirm")
+	}
+	if hasFlag(args, "--no-gpgsign") {
+		off := false
+		req.EnableGpgSign = &off
+	}
+	return req, nil
+}
+
+func errorsAsKeygenPartial(err error, target **gitidentity.KeygenProfileWriteError) bool {
+	if err == nil {
+		return false
+	}
+	if p, ok := err.(*gitidentity.KeygenProfileWriteError); ok {
+		*target = p
+		return true
+	}
+	return false
 }

@@ -88,6 +88,26 @@ type Project struct {
 	LastScanAt      time.Time    `json:"lastScanAt"`
 	ScanToolVersion string       `json:"scanToolVersion,omitempty"`
 	Revision        uint64       `json:"revision"`
+	// Binding 记录此项目本机绑定还是随共享要求分发（ADR-006：共享要求与本机
+	// 绑定分开）。它只存在于本机 projects.json；共享载荷导出时过滤本地路径与身份。
+	Binding ProjectBinding `json:"binding"`
+}
+
+// ProjectBinding 定义项目绑定范围：local 仅本机有效，shared 表示该项目可随
+// 共享要求分发。business-concepts.LocalBinding：个人路径不写进共享要求。
+type ProjectBinding string
+
+const (
+	BindingLocal  ProjectBinding = "local"
+	BindingShared ProjectBinding = "shared"
+)
+
+func (b ProjectBinding) Valid() bool {
+	switch b {
+	case BindingLocal, BindingShared:
+		return true
+	}
+	return false
 }
 
 type store struct {

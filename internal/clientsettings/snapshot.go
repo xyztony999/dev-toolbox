@@ -6,28 +6,39 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"dev-toolbox/internal/project"
 )
 
-// ExportSnapshot 生成可导出的会话快照：只含客户端自身偏好，不含 token 或身份选择。
-func ExportSnapshot(label string, includeSharedProjects bool) (Snapshot, error) {
+// ExportSnapshot 生成可导出的会话快照。
+// 只导出 shared 绑定项目的可移植投影（模块相对路径 + 构建系统 + 版本要求），
+// 全部剔除本地绝对路径、仓库身份、远程 URL 与扫描状态。
+func ExportSnapshot(label string) (Snapshot, error) {
 	current, err := Get()
 	if err != nil {
 		return Snapshot{}, err
 	}
-	projects := make([]SourceProject, 0, len(current.SourceProjects))
-	for _, item := range current.SourceProjects {
-		if !includeSharedProjects && item.Binding != BindingShared {
+	items, err := project.List()
+	if err != nil {
+		return Snapshot{}, err
+	}
+	requirements := make([]project.ProjectSummary, 0, len(items))
+	skipped := 0
+	for _, item := range items {
+		summary, sumErr := project.SummarizeShared(item)
+		if sumErr != nil {
+			skipped++
 			continue
 		}
-		projects = append(projects, item)
+		requirements = append(requirements, summary)
 	}
 	snap := Snapshot{
-		Schema:         snapshotSchema,
-		Label:          label,
-		ExportedAt:     time.Now().UTC(),
-		Theme:          current.Theme,
-		CustomAccent:   current.CustomAccent,
-		SourceProjects: projects,
+		Schema:       snapshotSchema,
+		Label:        label,
+		ExportedAt:   time.Now().UTC(),
+		Theme:        current.Theme,
+		CustomAccent: current.CustomAccent,
+		Requirements: requirements,
 	}
 	snap.Digest = snapshotDigest(snap)
 	return snap, nil
@@ -48,7 +59,7 @@ func ParseSnapshot(data []byte) (Snapshot, error) {
 		return Snapshot{}, fmt.Errorf("%s: schema %d", ErrBadSnapshot.Error(), snap.Schema)
 	}
 	if !snap.Theme.Valid() {
-		return Snapshot{}, ErrBadSnapshot
+		return Snapshot{}, ErrBadTheme
 	}
 	if snap.Theme == ThemeCustom {
 		if _, err := NormalizeAccent(snap.CustomAccent); err != nil {
@@ -57,15 +68,10 @@ func ParseSnapshot(data []byte) (Snapshot, error) {
 	} else {
 		snap.CustomAccent = ""
 	}
-	for i := range snap.SourceProjects {
-		if !snap.SourceProjects[i].Binding.Valid() {
-			return Snapshot{}, ErrBadBinding
+	for _, summary := range snap.Requirements {
+		if summary.ID == "" {
+			return Snapshot{}, ErrBadSnapshot
 		}
-		canonical, err := canonicalPath(snap.SourceProjects[i].Path)
-		if err != nil {
-			return Snapshot{}, err
-		}
-		snap.SourceProjects[i].Path = canonical
 	}
 	if snap.Digest == "" || snap.Digest != snapshotDigest(snap) {
 		return Snapshot{}, ErrBadDigest
@@ -74,7 +80,8 @@ func ParseSnapshot(data []byte) (Snapshot, error) {
 }
 
 // ImportSnapshot 导入快照：写入设置并把原始副本备份到配置目录。
-// 幂等：同一摘要重复导入只报告 skipped，不重复写备份。
+// 共享要求写入 shared-requirements.json（只读消费），不回写 projects.json。
+// 幂等：同一摘要重复导入只返回原记录，不重复备份。
 func ImportSnapshot(data []byte, expectedRevision uint64) (Settings, SnapshotRecord, error) {
 	snap, err := ParseSnapshot(data)
 	if err != nil {
@@ -105,25 +112,25 @@ func ImportSnapshot(data []byte, expectedRevision uint64) (Settings, SnapshotRec
 	if err != nil {
 		return Settings{}, SnapshotRecord{}, err
 	}
-	applied := 0
+	applied := 1 // 主题+强调色按 1 项计入
+	payloads := make([]project.ProjectPayload, 0, len(snap.Requirements))
+	for _, summary := range snap.Requirements {
+		modules := make([]project.SummaryModule, 0, len(summary.Modules))
+		modules = append(modules, summary.Modules...)
+		payloads = append(payloads, project.ProjectPayload{
+			ID:          summary.ID,
+			DisplayName: summary.DisplayName,
+			Modules:     modules,
+			ScanVersion: summary.ScanVersion,
+		})
+	}
+	state, err := project.SetSharedRequirements(payloads)
+	if err != nil {
+		return Settings{}, SnapshotRecord{}, err
+	}
+	applied += len(state.Payloads)
 	current.Theme = snap.Theme
 	current.CustomAccent = snap.CustomAccent
-	applied++
-	for _, item := range snap.SourceProjects {
-		found := false
-		for _, existing := range current.SourceProjects {
-			if samePath(existing.Path, item.Path) {
-				found = true
-				break
-			}
-		}
-		if found {
-			continue
-		}
-		current.SourceProjects = append(current.SourceProjects, item)
-		applied++
-	}
-	sortProjects(current.SourceProjects)
 	current.Revision++
 	record := SnapshotRecord{
 		SourceDigest: snap.Digest,
@@ -131,7 +138,7 @@ func ImportSnapshot(data []byte, expectedRevision uint64) (Settings, SnapshotRec
 		BackupPath:   backupPath,
 		ImportedAt:   time.Now().UTC(),
 		Applied:      applied,
-		Skipped:      len(snap.SourceProjects) - (applied - 1),
+		Skipped:      len(snap.Requirements) - len(state.Payloads),
 	}
 	current.Snapshots = append(current.Snapshots, record)
 	if err := writeSettings(settingsPath, current); err != nil {
@@ -171,14 +178,14 @@ func backUpSnapshot(settingsPath string, snap Snapshot) (string, error) {
 	return target, f.Close()
 }
 
-// snapshotDigest 覆盖主题、强调色与共享项目路径，不含导出时间戳。
+// snapshotDigest 覆盖主题、强调色与共享要求，不含导出时间戳。
 func snapshotDigest(snap Snapshot) string {
 	payload := struct {
-		Schema         int             `json:"schema"`
-		Theme          ThemeMode       `json:"theme"`
-		CustomAccent   string          `json:"customAccent,omitempty"`
-		SourceProjects []SourceProject `json:"sourceProjects"`
-	}{Schema: snap.Schema, Theme: snap.Theme, CustomAccent: snap.CustomAccent, SourceProjects: snap.SourceProjects}
+		Schema       int                      `json:"schema"`
+		Theme        ThemeMode                `json:"theme"`
+		CustomAccent string                   `json:"customAccent,omitempty"`
+		Requirements []project.ProjectSummary `json:"requirements,omitempty"`
+	}{Schema: snap.Schema, Theme: snap.Theme, CustomAccent: snap.CustomAccent, Requirements: snap.Requirements}
 	data, err := json.Marshal(payload)
 	if err != nil {
 		return ""

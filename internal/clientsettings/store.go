@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"sort"
 	"strings"
 	"time"
 )
@@ -34,11 +33,10 @@ func SettingsPath() (string, error) {
 // New 返回一份默认设置：跟随系统主题、空源项目清单、空快照记录。
 func New() Settings {
 	return Settings{
-		Schema:         storeVersion,
-		Revision:       1,
-		Theme:          ThemeSystem,
-		SourceProjects: []SourceProject{},
-		Snapshots:      []SnapshotRecord{},
+		Schema:    storeVersion,
+		Revision:  1,
+		Theme:     ThemeSystem,
+		Snapshots: []SnapshotRecord{},
 	}
 }
 
@@ -70,14 +68,6 @@ func normalize(s Settings) Settings {
 		s.CustomAccent = ""
 	}
 	s.CustomAccent = strings.TrimSpace(s.CustomAccent)
-	for i := range s.SourceProjects {
-		if !s.SourceProjects[i].Binding.Valid() {
-			s.SourceProjects[i].Binding = BindingLocal
-		}
-	}
-	if s.SourceProjects == nil {
-		s.SourceProjects = []SourceProject{}
-	}
 	if s.Snapshots == nil {
 		s.Snapshots = []SnapshotRecord{}
 	}
@@ -147,37 +137,9 @@ func samePath(a, b string) bool {
 	return a == b
 }
 
-func canonicalPath(value string) (string, error) {
-	value = strings.TrimSpace(value)
-	if value == "" {
-		return "", ErrBadPath
-	}
-	if strings.ContainsAny(value, "\r\n\x00") {
-		return "", ErrBadPath
-	}
-	if strings.Contains(value, "://") {
-		return "", ErrBadPath
-	}
-	cleaned := filepath.Clean(value)
-	absolute, err := filepath.Abs(cleaned)
-	if err != nil {
-		return "", ErrBadPath
-	}
-	if filepath.VolumeName(absolute) == "" && !filepath.IsAbs(absolute) {
-		return "", ErrBadPath
-	}
-	return absolute, nil
-}
-
 func byteDigest(data []byte) string {
 	sum := sha256.Sum256(data)
 	return hex.EncodeToString(sum[:])
-}
-
-func sortProjects(items []SourceProject) {
-	sort.SliceStable(items, func(i, j int) bool {
-		return strings.ToLower(items[i].Path) < strings.ToLower(items[j].Path)
-	})
 }
 
 // readSettings 读取并规范化设置；文件不存在时返回 New()。

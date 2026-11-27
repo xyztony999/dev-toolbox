@@ -578,6 +578,151 @@ export async function mockInvoke(operation: string, payload: Record<string, unkn
     case 'git.legacyImport':
       if (!payload.confirmBackup || !payload.confirmImport) throw new Error('GIT_LEGACY_CONFIRMATION_REQUIRED')
       return { sourceKind: 'gitid', sourceDigest: payload.sourceDigest, backupPath: '.../backups/gitid/config-demo.json', importedAt: now(), created: 1, skipped: 0, conflicts: 0 }
+    case 'git.keygenOptions':
+      return {
+        tools: [
+          { keyType: 'openpgp', available: true, executablePath: 'C:/Program Files/GnuPG/bin/gpg.exe', version: '2.4.5' },
+          { keyType: 'ssh', available: true, executablePath: 'C:/Windows/System32/OpenSSH/ssh-keygen.exe', version: 'OpenSSH_for_Windows_9.5' },
+        ],
+        algorithms: [
+          { keyType: 'openpgp', values: ['ed25519', 'rsa4096', 'rsa3072', 'nistp256'] },
+          { keyType: 'ssh', values: ['ed25519', 'rsa4096', 'ecdsa256'] },
+        ],
+        expiries: [
+          { keyType: 'openpgp', values: ['never', '1y', '2y', '5y'], default: 'never' },
+          { keyType: 'ssh', values: ['never'], default: 'never' },
+        ],
+        defaults: {
+          openpgp: { algorithm: 'ed25519', expiry: 'never' },
+          ssh: { algorithm: 'ed25519', expiry: 'never' },
+        },
+        sshDefaultPathHint: 'C:/Users/demo/.ssh/devtoolbox_profile',
+      }
+    case 'git.keygenPreview': {
+      const profileId = String(payload.profileId ?? '')
+      const profile = gitProfiles.find((item) => item.id === profileId)
+      if (!profile) throw new Error('GIT_PROFILE_NOT_FOUND')
+      const keyType = String(payload.keyType ?? 'openpgp') as 'openpgp' | 'ssh'
+      if (keyType === 'openpgp' && (!profile.name?.trim() || !profile.email?.trim())) {
+        throw new Error('GIT_PROFILE_INVALID: 档案需要姓名和邮箱')
+      }
+      const algorithm = String(payload.algorithm ?? 'ed25519')
+      const expiry = keyType === 'ssh' ? 'never' : String(payload.expiry ?? 'never')
+      const openpgpAlgos = ['ed25519', 'rsa4096', 'rsa3072', 'nistp256']
+      const sshAlgos = ['ed25519', 'rsa4096', 'ecdsa256']
+      if (keyType === 'openpgp' && !openpgpAlgos.includes(algorithm)) throw new Error('GIT_KEYGEN_PARAMS_INVALID')
+      if (keyType === 'ssh' && !sshAlgos.includes(algorithm)) throw new Error('GIT_KEYGEN_PARAMS_INVALID')
+      if (keyType === 'ssh' && expiry !== 'never') throw new Error('GIT_KEYGEN_PARAMS_INVALID')
+      const enableGpgSign = payload.enableGpgSign !== false
+      const warnings: string[] = []
+      if (profile.signingKey) warnings.push('将替换现有签名密钥引用')
+      const passphraseSet = !!String(payload.passphrase ?? '')
+      return {
+        profileId,
+        keyType,
+        toolPath: keyType === 'ssh' ? 'C:/Windows/System32/OpenSSH/ssh-keygen.exe' : 'C:/Program Files/GnuPG/bin/gpg.exe',
+        commandSummary: keyType === 'ssh'
+          ? [
+            `ssh-keygen -t ${algorithm === 'ecdsa256' ? 'ecdsa' : algorithm === 'rsa4096' ? 'rsa' : 'ed25519'} -f <output>`,
+            `口令：${passphraseSet ? '<passphrase>' : '（未设置）'}`,
+            `注释：devtoolbox:${profileId}`,
+          ]
+          : [
+            `gpg --batch --generate-key（UID=${profile.name} <${profile.email}>）`,
+            `算法 ${algorithm}，有效期 ${expiry}`,
+            `口令：${passphraseSet ? '<passphrase>' : '（未设置）'}`,
+          ],
+        profilePatch: {
+          signingKey: '(pending)',
+          gpgFormat: keyType === 'ssh' ? 'ssh' : 'openpgp',
+          gpgSign: enableGpgSign,
+        },
+        warnings,
+      }
+    }
+    case 'git.keygenCreate': {
+      if (!payload.confirm) throw new Error('CONFIRMATION_REQUIRED')
+      const profileId = String(payload.profileId ?? '')
+      const profile = gitProfiles.find((item) => item.id === profileId)
+      if (!profile) throw new Error('GIT_PROFILE_NOT_FOUND')
+      const keyType = String(payload.keyType ?? 'openpgp') as 'openpgp' | 'ssh'
+      if (keyType === 'openpgp' && (!profile.name?.trim() || !profile.email?.trim())) {
+        throw new Error('GIT_PROFILE_INVALID: 档案需要姓名和邮箱')
+      }
+      const enableGpgSign = payload.enableGpgSign !== false
+      const fingerprint = keyType === 'openpgp'
+        ? `DEMO${Date.now().toString(16).toUpperCase().slice(-12)}`
+        : undefined
+      const outputBase = String(payload.outputPath ?? `C:/Users/demo/.ssh/devtoolbox_${profileId}`).replace(/\.pub$/i, '')
+      const publicKeyPath = keyType === 'ssh' ? `${outputBase}.pub` : undefined
+      const signingKey = keyType === 'ssh' ? publicKeyPath! : fingerprint!
+      profile.signingKey = signingKey
+      profile.gpgFormat = keyType === 'ssh' ? 'ssh' : 'openpgp'
+      profile.gpgSign = enableGpgSign
+      return {
+        profile: copy(profile),
+        keyType,
+        signingKey,
+        fingerprint: fingerprint || `SHA256:demo${profileId}`,
+        publicKeyPath,
+        publicKeyPreview: keyType === 'ssh'
+          ? `ssh-ed25519 AAAAC3NzaC1lZDI1NTE5DEMO devtoolbox:${profileId}`
+          : undefined,
+        localKeyCreated: true,
+        profileUpdated: true,
+      }
+    }
+    case 'git.keyList': {
+      const keyType = String(payload.keyType ?? 'openpgp') as 'openpgp' | 'ssh'
+      if (keyType === 'openpgp') {
+        return [
+          { keyType: 'openpgp', id: 'ABCDEF0123456789', fingerprint: 'ABCD EF01 2345 6789', uidOrComment: '张三 <z@corp.com>', createdAt: '2025-01-12' },
+          { keyType: 'openpgp', id: 'FEDCBA9876543210', fingerprint: 'FEDC BA98 7654 3210', uidOrComment: 'tony <tony@me.dev>', createdAt: '2024-08-03' },
+        ]
+      }
+      return [
+        { keyType: 'ssh', id: 'C:/Users/demo/.ssh/devtoolbox_work.pub', fingerprint: 'SHA256:demoworkkey', uidOrComment: 'devtoolbox:work', publicKeyPath: 'C:/Users/demo/.ssh/devtoolbox_work.pub', createdAt: '2025-03-01' },
+        { keyType: 'ssh', id: 'C:/Users/demo/.ssh/id_ed25519.pub', fingerprint: 'SHA256:demoided25519', uidOrComment: 'demo@devtoolbox', publicKeyPath: 'C:/Users/demo/.ssh/id_ed25519.pub' },
+      ]
+    }
+    case 'git.keySelect': {
+      if (!payload.confirm) throw new Error('CONFIRMATION_REQUIRED')
+      const profileId = String(payload.profileId ?? '')
+      const profile = gitProfiles.find((item) => item.id === profileId)
+      if (!profile) throw new Error('GIT_PROFILE_NOT_FOUND')
+      const keyType = String(payload.keyType ?? 'openpgp') as 'openpgp' | 'ssh'
+      const id = String(payload.id ?? '')
+      if (!id) throw new Error('GIT_KEY_NOT_FOUND')
+      const enableGpgSign = payload.enableGpgSign !== false
+      const signingKey = id
+      profile.signingKey = signingKey
+      profile.gpgFormat = keyType === 'ssh' ? 'ssh' : 'openpgp'
+      profile.gpgSign = enableGpgSign
+      return {
+        profile: copy(profile),
+        keyType,
+        signingKey,
+        fingerprint: keyType === 'openpgp' ? id : `SHA256:select${id.length}`,
+        publicKeyPath: keyType === 'ssh' ? id : undefined,
+        localKeyCreated: false,
+        profileUpdated: true,
+      }
+    }
+    case 'git.keyExport': {
+      const keyType = String(payload.keyType ?? 'openpgp') as 'openpgp' | 'ssh'
+      const id = String(payload.id ?? '')
+      if (!id) throw new Error('GIT_KEY_NOT_FOUND')
+      const text = keyType === 'ssh'
+        ? `ssh-ed25519 AAAAC3NzaC1lZDI1NTE5DEMOEXPORT ${id}`
+        : `-----BEGIN PGP PUBLIC KEY BLOCK-----\nVersion: Demo\n\nmQENDemoPublicKey${id.slice(0, 8)}\n-----END PGP PUBLIC KEY BLOCK-----`
+      const writePath = String(payload.writePath ?? '').trim()
+      if (!writePath) return { text }
+      if (!payload.confirm) throw new Error('CONFIRMATION_REQUIRED')
+      // 演示：含 "exists" 的路径视为已存在，需 overwrite
+      if (/exists/i.test(writePath) && !payload.overwrite) throw new Error('GIT_KEY_EXPORT_EXISTS')
+      if (writePath.includes('://') || writePath.length < 2) throw new Error('GIT_KEY_EXPORT_PATH_INVALID')
+      return { text, writtenPath: writePath }
+    }
     case 'session.preview': {
       const selected = userRuntimeState.installations.filter((item) => userRuntimeState.globalSelections[item.runtime]?.installationId === item.id && item.available)
       const binFor = (runtime: string, home: string) => ['node', 'python'].includes(runtime) ? home : `${home}/bin`

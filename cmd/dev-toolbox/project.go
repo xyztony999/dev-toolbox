@@ -132,8 +132,28 @@ func run(ctx context.Context, args []string) int {
 			return report(err)
 		}
 		return output(map[string]bool{"removed": removed})
+	case "binding":
+		if len(args) != 4 {
+			return usage("project binding <id> <local|shared>")
+		}
+		binding := project.ProjectBinding(args[3])
+		if !binding.Valid() {
+			return usage("project binding <id> <local|shared>")
+		}
+		current, err := project.Get(args[2])
+		if err != nil {
+			return report(err)
+		}
+		updated, changed, err := project.SetBinding(current.ID, binding, current.Revision)
+		if err != nil {
+			return report(err)
+		}
+		if !changed {
+			fmt.Fprintf(os.Stderr, "绑定范围已是 %s，未改动\n", updated.Binding)
+		}
+		return output(map[string]any{"binding": updated.Binding, "changed": changed, "revision": updated.Revision})
 	default:
-		return usage("project <scan|add|list|show|rescan|remove> [args]")
+		return usage("project <scan|add|list|show|rescan|remove|binding> [args]")
 	}
 }
 

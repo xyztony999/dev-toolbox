@@ -165,7 +165,7 @@ func invoke(req request) response {
 	var err error
 	switch req.Operation {
 	case "settings.get":
-		data, err = clientsettings.Get()
+		data, err = settingsView()
 	case "settings.toolStatuses":
 		data = clientsettings.ToolStatuses(ctx, clientsettings.ToolStatusOptions{AllowPathLookup: true})
 	case "settings.setTheme":
@@ -177,7 +177,9 @@ func invoke(req request) response {
 		if err = decode(req.Payload, &p); err == nil {
 			var updated clientsettings.Settings
 			updated, err = clientsettings.SetTheme(clientsettings.ThemeMode(p.Mode), p.Accent, p.ExpectedRevision)
-			data = updated
+			if err == nil {
+				data, err = settingsViewFrom(updated)
+			}
 		}
 	case "settings.addSourceProject":
 		var p struct {
@@ -188,9 +190,9 @@ func invoke(req request) response {
 			ExpectedRevision uint64 `json:"expectedRevision"`
 		}
 		if err = decode(req.Payload, &p); err == nil {
-			var updated clientsettings.Settings
-			updated, err = clientsettings.AddSourceProject(p.Path, p.Label, p.Note, clientsettings.ProjectBinding(p.Binding), p.ExpectedRevision)
-			data = updated
+			_ = p.Note
+			_ = p.ExpectedRevision
+			data, err = addSourceProjectCompat(ctx, p.Path, p.Label, p.Binding)
 		}
 	case "settings.removeSourceProject":
 		var p struct {
@@ -198,10 +200,12 @@ func invoke(req request) response {
 			ExpectedRevision uint64 `json:"expectedRevision"`
 		}
 		if err = decode(req.Payload, &p); err == nil {
-			var updated clientsettings.Settings
+			var view map[string]any
 			var removed bool
-			updated, removed, err = clientsettings.RemoveSourceProject(p.Path, p.ExpectedRevision)
-			data = map[string]any{"settings": updated, "removed": removed}
+			view, removed, err = removeSourceProjectCompat(p.Path, p.ExpectedRevision)
+			if err == nil {
+				data = map[string]any{"settings": view, "removed": removed}
+			}
 		}
 	case "settings.exportSnapshot":
 		var p struct {
@@ -209,9 +213,10 @@ func invoke(req request) response {
 			IncludeSharedProjects bool   `json:"includeSharedProjects"`
 		}
 		if err = decode(req.Payload, &p); err == nil {
+			_ = p.IncludeSharedProjects // 共享过滤已迁入 project.SummarizeShared
 			var snap clientsettings.Snapshot
 			var payload []byte
-			snap, err = clientsettings.ExportSnapshot(p.Label, p.IncludeSharedProjects)
+			snap, err = clientsettings.ExportSnapshot(p.Label)
 			if err == nil {
 				payload, err = clientsettings.SnapshotBytes(snap)
 				if err == nil {
@@ -234,7 +239,11 @@ func invoke(req request) response {
 				var record clientsettings.SnapshotRecord
 				updated, record, err = clientsettings.ImportSnapshot([]byte(p.Payload), p.ExpectedRevision)
 				if err == nil {
-					data = map[string]any{"settings": updated, "record": record, "backedUp": p.ConfirmBackup}
+					var view map[string]any
+					view, err = settingsViewFrom(updated)
+					if err == nil {
+						data = map[string]any{"settings": view, "record": record, "backedUp": p.ConfirmBackup}
+					}
 				}
 			}
 		}
@@ -832,6 +841,67 @@ func invoke(req request) response {
 		if err = decode(req.Payload, &p); err == nil {
 			data, err = gitidentity.LegacyImport(ctx, gitStore(), p.SourceDigest, p.ProfileIDs, p.ConfirmBackup, p.ConfirmImport)
 		}
+	case "git.keygenOptions":
+		data = gitidentity.KeygenOptionsProbe(ctx, gitidentity.KeygenTools{})
+	case "git.keygenPreview":
+		var p gitidentity.KeygenCreateRequest
+		if err = decode(req.Payload, &p); err == nil {
+			data, err = gitidentity.KeygenPreview(ctx, gitStore(), gitidentity.KeygenTools{}, p)
+		}
+	case "git.keygenCreate":
+		var p gitidentity.KeygenCreateRequest
+		if err = decode(req.Payload, &p); err == nil {
+			var result gitidentity.KeygenResult
+			result, err = gitidentity.KeygenCreate(ctx, gitStore(), gitidentity.KeygenTools{}, p)
+			if err != nil {
+				if partial, ok := err.(*gitidentity.KeygenProfileWriteError); ok {
+					return response{
+						RequestID: req.RequestID,
+						OK:        false,
+						Data:      partial.Result,
+						Error:     &fault{Code: "GIT_KEYGEN_PROFILE_WRITE_FAILED", Message: partial.Error()},
+					}
+				}
+			} else {
+				data = result
+			}
+		}
+	case "git.keyList":
+		var p struct {
+			KeyType string `json:"keyType"`
+		}
+		if err = decode(req.Payload, &p); err == nil {
+			data, err = gitidentity.KeyList(ctx, gitidentity.KeygenTools{}, p.KeyType)
+		}
+	case "git.keySelect":
+		var p struct {
+			ProfileID     string `json:"profileId"`
+			KeyType       string `json:"keyType"`
+			ID            string `json:"id"`
+			EnableGpgSign *bool  `json:"enableGpgSign"`
+			Confirm       bool   `json:"confirm"`
+		}
+		if err = decode(req.Payload, &p); err == nil {
+			var result gitidentity.KeygenResult
+			result, err = gitidentity.KeySelect(ctx, gitStore(), gitidentity.KeygenTools{}, p.ProfileID, p.KeyType, p.ID, p.EnableGpgSign, p.Confirm)
+			if err != nil {
+				if partial, ok := err.(*gitidentity.KeygenProfileWriteError); ok {
+					return response{
+						RequestID: req.RequestID,
+						OK:        false,
+						Data:      partial.Result,
+						Error:     &fault{Code: "GIT_KEYGEN_PROFILE_WRITE_FAILED", Message: partial.Error()},
+					}
+				}
+			} else {
+				data = result
+			}
+		}
+	case "git.keyExport":
+		var p gitidentity.KeyExportRequest
+		if err = decode(req.Payload, &p); err == nil {
+			data, err = gitidentity.KeyExport(ctx, gitidentity.KeygenTools{}, p)
+		}
 	case "session.preview":
 		var p struct {
 			Path string `json:"path"`
@@ -885,6 +955,105 @@ func clientInfo() (map[string]string, error) {
 		"os":              runtime.GOOS,
 		"arch":            runtime.GOARCH,
 	}, nil
+}
+
+// settingsView 把 clientsettings + project 清单拼成设置页仍在用的视图
+// （sourceProjects 已迁出 settings.json，由 projects.json 提供）。
+func settingsView() (map[string]any, error) {
+	current, err := clientsettings.Get()
+	if err != nil {
+		return nil, err
+	}
+	return settingsViewFrom(current)
+}
+
+func settingsViewFrom(current clientsettings.Settings) (map[string]any, error) {
+	items, err := project.List()
+	if err != nil {
+		return nil, err
+	}
+	source := make([]map[string]any, 0, len(items))
+	for _, item := range items {
+		binding := string(item.Binding)
+		if binding == "" {
+			binding = string(project.BindingLocal)
+		}
+		source = append(source, map[string]any{
+			"path":    item.RootPath,
+			"label":   item.DisplayName,
+			"binding": binding,
+			"note":    "",
+		})
+	}
+	return map[string]any{
+		"schema":         current.Schema,
+		"revision":       current.Revision,
+		"theme":          current.Theme,
+		"customAccent":   current.CustomAccent,
+		"sourceProjects": source,
+		"snapshots":      current.Snapshots,
+	}, nil
+}
+
+func addSourceProjectCompat(ctx context.Context, root, label, binding string) (map[string]any, error) {
+	root = strings.TrimSpace(root)
+	if root == "" {
+		return nil, errors.New("CLIENT_SETTINGS_PATH_INVALID: path required")
+	}
+	candidate, err := project.ScanPreview(ctx, root)
+	if err != nil {
+		return nil, err
+	}
+	item, _, err := project.Register(ctx, root, label, candidate.ID, candidate.EvidenceDigest)
+	if err != nil {
+		return nil, err
+	}
+	want := project.ProjectBinding(binding)
+	if want == "" {
+		want = project.BindingLocal
+	}
+	if want.Valid() && item.Binding != want {
+		item, _, err = project.SetBinding(item.ID, want, item.Revision)
+		if err != nil {
+			return nil, err
+		}
+	}
+	_ = item
+	return settingsView()
+}
+
+func removeSourceProjectCompat(root string, expectedRevision uint64) (map[string]any, bool, error) {
+	root = strings.TrimSpace(root)
+	items, err := project.List()
+	if err != nil {
+		return nil, false, err
+	}
+	for _, item := range items {
+		if !sameProjectPath(item.RootPath, root) {
+			continue
+		}
+		rev := item.Revision
+		if expectedRevision != 0 {
+			rev = expectedRevision
+		}
+		removed, err := project.Unregister(item.ID, rev)
+		if err != nil {
+			return nil, false, err
+		}
+		view, err := settingsView()
+		return view, removed, err
+	}
+	view, err := settingsView()
+	return view, false, err
+}
+
+func sameProjectPath(a, b string) bool {
+	left, errA := filepath.Abs(a)
+	right, errB := filepath.Abs(b)
+	if errA != nil || errB != nil {
+		return filepath.Clean(a) == filepath.Clean(b)
+	}
+	return strings.EqualFold(filepath.Clean(left), filepath.Clean(right))
 }
 
 func openClientTarget(kind, target string) error {

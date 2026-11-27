@@ -21,9 +21,15 @@ var (
 	ErrStaleScan     = errors.New("PROJECT_SCAN_STALE")
 	ErrRevision      = errors.New("PROJECT_REVISION_CONFLICT")
 	ErrStoreCorrupt  = errors.New("PROJECT_STORE_CORRUPT")
+	// ErrNotShared 表示项目是本地绑定，不能进入共享要求载荷（ADR-006）。
+	ErrNotShared = errors.New("PROJECT_NOT_SHARED")
 )
 
 func StorePath() (string, error) {
+	// 仅用于测试隔离；生产环境始终落在用户配置目录。
+	if override := strings.TrimSpace(os.Getenv("DEVTOOLBOX_PROJECT_STORE")); override != "" {
+		return override, nil
+	}
 	base, err := os.UserConfigDir()
 	if err != nil {
 		return "", fmt.Errorf("resolve user config directory: %w", err)
@@ -101,6 +107,7 @@ func Register(ctx context.Context, root, name, candidateID, expectedDigest strin
 		LastScanAt:      candidate.ScannedAt,
 		ScanToolVersion: ScanToolVersion,
 		Revision:        1,
+		Binding:         BindingLocal,
 	}
 	s.Projects = append(s.Projects, p)
 	if err := writeStore(path, s); err != nil {
@@ -232,6 +239,13 @@ func readStore() (store, string, error) {
 	}
 	if s.Projects == nil {
 		s.Projects = []Project{}
+	}
+	// 迁移默认值：旧 projects.json 没有 binding 字段，反序列化后为 ""，
+	// 统一归一为 local（不改变现有项目的共享可见性）。
+	for index := range s.Projects {
+		if !s.Projects[index].Binding.Valid() {
+			s.Projects[index].Binding = BindingLocal
+		}
 	}
 	return s, path, nil
 }

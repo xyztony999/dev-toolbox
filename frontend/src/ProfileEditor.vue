@@ -3,12 +3,20 @@ import { computed, nextTick, reactive, ref, watch } from 'vue'
 import { Modal } from 'ant-design-vue'
 import type { FormInstance, Rule } from 'ant-design-vue/es/form'
 import type { GitProfile } from './types'
+import KeygenPanel from './KeygenPanel.vue'
 
 // 档案编辑抽屉：单列分组表单，label 用人话、键名作注解。
 // 只负责草稿与校验；保存由父组件调用服务端，错误经 error 回显在抽屉内
 //（页面顶部的错误条会被抽屉遮住）。
 const props = defineProps<{ open: boolean; profile?: GitProfile; saving: boolean; error?: string }>()
-const emit = defineEmits<{ (e: 'update:open', value: boolean): void; (e: 'save', profile: GitProfile): void }>()
+const emit = defineEmits<{
+  (e: 'update:open', value: boolean): void
+  (e: 'save', profile: GitProfile): void
+  (e: 'applied', profile: GitProfile): void
+}>()
+
+const keygenOpen = ref(false)
+const keygenMode = ref<'generate' | 'select'>('generate')
 
 type Pair = { left: string; right: string }
 const blankPair = (): Pair => ({ left: '', right: '' })
@@ -74,11 +82,45 @@ function loadDraft() {
 }
 
 watch(() => props.open, async (open) => {
-  if (!open) return
+  if (!open) {
+    keygenOpen.value = false
+    return
+  }
   loadDraft()
   await nextTick()
   formRef.value?.clearValidate()
 })
+
+function openKeygen(mode: 'generate' | 'select') {
+  if (!idLocked.value || !form.id.trim()) {
+    Modal.info({
+      title: '请先保存档案',
+      content: '生成或选用密钥需要已有档案 ID。先保存档案，再回来操作。',
+      okText: '知道了',
+      zIndex: 1100,
+    })
+    return
+  }
+  keygenMode.value = mode
+  keygenOpen.value = true
+}
+
+/** 密钥服务已写档案签名字段：回填表单，并只把签名三字段同步进 baseline，保留其它脏字段。 */
+function onKeygenApplied(profile: GitProfile) {
+  form.signingKey = profile.signingKey ?? ''
+  form.gpgFormat = profile.gpgFormat || undefined
+  form.gpgSign = !!profile.gpgSign
+  try {
+    const parts = JSON.parse(baseline) as unknown[]
+    parts[3] = form.gpgSign
+    parts[4] = form.signingKey.trim()
+    parts[5] = form.gpgFormat ?? ''
+    baseline = JSON.stringify(parts)
+  } catch {
+    baseline = snapshot()
+  }
+  emit('applied', profile)
+}
 
 function requestClose() {
   if (!dirty.value) {
@@ -164,6 +206,11 @@ async function submit() {
           <template #label>签名格式<span class="key-note">gpg.format</span></template>
           <a-select v-model:value="form.gpgFormat" :options="gpgFormatOptions" allow-clear placeholder="留空则不设置" />
         </a-form-item>
+        <div class="signing-actions">
+          <a-button size="small" :disabled="!idLocked" @click="openKeygen('generate')">生成密钥</a-button>
+          <a-button size="small" :disabled="!idLocked" @click="openKeygen('select')">选用本机密钥</a-button>
+        </div>
+        <p v-if="!idLocked" class="group-note">新建档案需先保存，才能生成或选用密钥。x509 / 手工指纹仍可直接填写。</p>
       </section>
 
       <section class="field-group">
@@ -201,6 +248,16 @@ async function submit() {
       </div>
     </template>
   </a-drawer>
+
+  <KeygenPanel
+    v-model:open="keygenOpen"
+    :mode="keygenMode"
+    :profile-id="form.id.trim()"
+    :profile-name="form.name"
+    :profile-email="form.email"
+    :current-signing-key="form.signingKey"
+    @applied="onKeygenApplied"
+  />
 </template>
 
 <style scoped>
@@ -220,6 +277,7 @@ async function submit() {
 .pair-arrow{text-align:center;color:var(--text-muted)}
 .pair-remove{justify-self:end}
 .pair-add{padding-left:0}
+.signing-actions{display:flex;flex-wrap:wrap;gap:8px;margin:-4px 0 8px}
 .editor-footer{display:flex;justify-content:flex-end;gap:9px}
 @media(max-width:440px){
   .pair-head{display:none}

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -13,6 +14,16 @@ func isolate(t *testing.T) string {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "settings.json")
 	t.Setenv("DEVTOOLBOX_SETTINGS", path)
+	return path
+}
+
+// isolateProjects 重定向登记项目与共享要求载荷，保证快照测试不读真实 projects.json。
+func isolateProjects(t *testing.T) string {
+	t.Helper()
+	dir := t.TempDir()
+	path := filepath.Join(dir, "projects.json")
+	t.Setenv("DEVTOOLBOX_PROJECT_STORE", path)
+	t.Setenv("DEVTOOLBOX_SHARED_REQUIREMENTS", filepath.Join(dir, "shared-requirements.json"))
 	return path
 }
 
@@ -28,8 +39,8 @@ func TestNewDefaults(t *testing.T) {
 	if got.Theme != ThemeSystem {
 		t.Fatalf("expected system theme, got %s", got.Theme)
 	}
-	if len(got.SourceProjects) != 0 || len(got.Snapshots) != 0 {
-		t.Fatalf("expected empty lists: %+v", got)
+	if len(got.Snapshots) != 0 {
+		t.Fatalf("expected empty snapshots: %+v", got)
 	}
 }
 
@@ -63,7 +74,6 @@ func TestSetThemeCustomPersistsAccent(t *testing.T) {
 	if stored.CustomAccent != "#a34b2a" {
 		t.Fatalf("accent not persisted: %+v", stored)
 	}
-	// 切回系统主题应清除自定义色
 	got, err = SetTheme(ThemeSystem, "", got.Revision)
 	if err != nil {
 		t.Fatal(err)
@@ -80,90 +90,82 @@ func TestSetThemeRevisionConflict(t *testing.T) {
 	}
 }
 
-func TestSourceProjectRoundTrip(t *testing.T) {
-	path := isolate(t)
-	root := t.TempDir()
-	projectRoot := filepath.Join(root, "repo")
-	if err := os.MkdirAll(projectRoot, 0o700); err != nil {
-		t.Fatal(err)
-	}
-	got, err := AddSourceProject(projectRoot, "演示仓库", "", BindingLocal, 1)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(got.SourceProjects) != 1 || got.SourceProjects[0].Binding != BindingLocal {
-		t.Fatalf("unexpected registration: %+v", got.SourceProjects)
-	}
-	if _, err := AddSourceProject(projectRoot, "重复", "", BindingShared, got.Revision); err == nil {
-		t.Fatal("duplicate path should be rejected")
-	}
-	back, removed, err := RemoveSourceProject(projectRoot, got.Revision)
-	if err != nil || !removed {
-		t.Fatalf("remove failed: removed=%v err=%v", removed, err)
-	}
-	if len(back.SourceProjects) != 0 {
-		t.Fatalf("expected empty list, got %+v", back.SourceProjects)
-	}
-	if _, err := os.Stat(path); err != nil {
-		t.Fatalf("settings file missing: %v", err)
-	}
-}
-
-func TestSharedRejectsPrivateHomePaths(t *testing.T) {
+func TestExportSnapshotHasNoLocalArtifacts(t *testing.T) {
 	isolate(t)
-	home, err := os.UserHomeDir()
-	if err != nil {
-		t.Skip("no home dir")
-	}
-	privatePath := filepath.Join(home, "secret-project")
-	if _, err := AddSourceProject(privatePath, "", "", BindingShared, 1); err == nil {
-		t.Fatal("shared entries must not point inside the user home directory")
-	}
-}
-
-func TestSourceProjectRejectsURLs(t *testing.T) {
-	isolate(t)
-	if _, err := AddSourceProject("https://github.com/xyztony999/dev-toolbox", "", "", BindingShared, 1); err == nil {
-		t.Fatal("URL paths must be rejected")
-	}
-	if _, err := AddSourceProject("", "", "", BindingLocal, 1); err == nil {
-		t.Fatal("empty paths must be rejected")
-	}
-}
-
-func TestSnapshotExportImportIdempotent(t *testing.T) {
-	path := isolate(t)
-	sharedRoot := t.TempDir()
-	settings, err := AddSourceProject(sharedRoot, "共享", "", BindingShared, 1)
+	isolateProjects(t)
+	snap, err := ExportSnapshot("demo")
 	if err != nil {
 		t.Fatal(err)
-	}
-	snap, err := ExportSnapshot("demo", false)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(snap.SourceProjects) != 1 {
-		t.Fatalf("expected only shared entries, got %+v", snap.SourceProjects)
 	}
 	data, err := SnapshotBytes(snap)
 	if err != nil {
 		t.Fatal(err)
 	}
-	// 先切走主题，再导入
-	if _, err := SetTheme(ThemeLight, "", settings.Revision); err != nil {
+	payload := string(data)
+	for forbidden := range map[string]struct{}{
+		"repositories": {},
+		"rootPath":     {},
+		"remoteUrl":    {},
+		"userEmail":    {},
+	} {
+		if strings.Contains(payload, forbidden) {
+			t.Fatalf("snapshot must not leak %q: %s", forbidden, payload)
+		}
+	}
+	if len(snap.Requirements) != 0 {
+		t.Fatalf("expected no requirements for a machine with no shared projects, got %+v", snap.Requirements)
+	}
+}
+
+func TestSnapshotRejectsForeignSchema(t *testing.T) {
+	isolate(t)
+	if _, err := ParseSnapshot([]byte(`{"schema":99,"theme":"dark"}`)); err == nil {
+		t.Fatal("foreign schema must be rejected")
+	}
+}
+
+func TestSnapshotRejectsTamperedDigest(t *testing.T) {
+	isolate(t)
+	snap, err := ExportSnapshot("demo")
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err := SnapshotBytes(snap)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal(data, &payload); err != nil {
+		t.Fatal(err)
+	}
+	payload["theme"] = ThemeDark
+	tampered, err := json.Marshal(payload)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ParseSnapshot(tampered); err == nil {
+		t.Fatal("tampered snapshot must be rejected")
+	}
+}
+
+func TestSnapshotImportIdempotent(t *testing.T) {
+	isolate(t)
+	isolateProjects(t)
+	snap, err := ExportSnapshot("demo")
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err := SnapshotBytes(snap)
+	if err != nil {
 		t.Fatal(err)
 	}
 	imported, record, err := ImportSnapshot(data, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if imported.Revision <= settings.Revision {
-		t.Fatalf("revision must advance: %d -> %d", settings.Revision, imported.Revision)
-	}
 	if record.Applied == 0 {
 		t.Fatalf("expected applied count, got %+v", record)
 	}
-	// 同一份快照重复导入：幂等，修订号不变且不新增记录
 	again, record2, err := ImportSnapshot(data, imported.Revision)
 	if err != nil {
 		t.Fatal(err)
@@ -174,46 +176,8 @@ func TestSnapshotExportImportIdempotent(t *testing.T) {
 	if len(again.Snapshots) != 1 || record2.SourceDigest != snap.Digest {
 		t.Fatalf("import must be idempotent: %+v", record2)
 	}
-	// 备份副本存在
 	if _, err := os.Stat(record.BackupPath); err != nil {
 		t.Fatalf("backup missing: %v", err)
-	}
-	_ = path
-}
-
-func TestSnapshotRejectsTamperedDigest(t *testing.T) {
-	isolate(t)
-	snap, err := ExportSnapshot("demo", true)
-	if err != nil {
-		t.Fatal(err)
-	}
-	data, err := SnapshotBytes(snap)
-	if err != nil {
-		t.Fatal(err)
-	}
-	// 篡改参与摘要的字段（主题）后必须被拒绝；标签不参与摘要
-	var payload map[string]any
-	if err := json.Unmarshal(data, &payload); err != nil {
-		t.Fatal(err)
-	}
-	payload["theme"] = ThemeDark
-	tamperedBytes, err := json.Marshal(payload)
-	if err != nil {
-		t.Fatal(err)
-	}
-	tampered := string(tamperedBytes)
-	if tampered == string(data) {
-		t.Fatal("tamper did not apply")
-	}
-	if _, err := ParseSnapshot([]byte(tampered)); err == nil {
-		t.Fatal("tampered snapshot must be rejected")
-	}
-}
-
-func TestSnapshotRejectsForeignSchema(t *testing.T) {
-	isolate(t)
-	if _, err := ParseSnapshot([]byte(`{"schema":99,"theme":"dark"}`)); err == nil {
-		t.Fatal("foreign schema must be rejected")
 	}
 }
 
