@@ -212,11 +212,53 @@ func truncateToolErr(stderr string) string {
 	return strings.Join(kept, "\n")
 }
 
-func gpgEnv(home string) []string {
+func gpgEnv(home, bin string) []string {
 	if home == "" {
 		return nil
 	}
-	return []string{"GNUPGHOME=" + home}
+	return []string{"GNUPGHOME=" + gpgToolHomePath(home, bin)}
+}
+
+// gpgToolHomePath adapts a Windows filesystem path for the gpg/gpgconf that
+// will consume GNUPGHOME / --homedir. Git for Windows ships an MSYS build that
+// treats "C:\..." as a relative path under the process cwd; rewrite those to
+// "/c/..." while leaving native Gpg4win on forward-slash drive paths.
+func gpgToolHomePath(home, bin string) string {
+	if home == "" || runtime.GOOS != "windows" {
+		return home
+	}
+	abs, err := filepath.Abs(home)
+	if err != nil {
+		abs = home
+	}
+	slash := filepath.ToSlash(abs)
+	exe := bin
+	if exe == "" {
+		exe = "gpg"
+	}
+	if path, err := resolveToolPath(exe); err == nil {
+		exe = path
+	}
+	if looksLikeMSYSBinary(exe) {
+		return windowsPathToMSYS(slash)
+	}
+	return slash
+}
+
+func looksLikeMSYSBinary(path string) bool {
+	p := strings.ToLower(filepath.ToSlash(path))
+	return strings.Contains(p, "/git/") ||
+		strings.Contains(p, "/msys") ||
+		strings.Contains(p, "/usr/bin/gpg") ||
+		strings.Contains(p, "/usr/bin/gpgconf")
+}
+
+func windowsPathToMSYS(p string) string {
+	p = filepath.ToSlash(p)
+	if len(p) >= 2 && p[1] == ':' {
+		return "/" + strings.ToLower(string(p[0])) + p[2:]
+	}
+	return p
 }
 
 // mergeToolEnv copies the process environment, drops keys that extras will
@@ -263,20 +305,40 @@ func prepareGPGHome(home string) error {
 // On Windows, quick-generate-key often fails with "No agent running" if the
 // agent was never started for that GNUPGHOME.
 func ensureGPGAgent(ctx context.Context, tools KeygenTools, home string) error {
-	gpgconf, err := resolveToolPath("gpgconf")
-	if err != nil {
+	gpgconf := siblingOrPath(tools.gpgBin(), "gpgconf")
+	if _, err := resolveToolPath(gpgconf); err != nil {
 		// Best-effort: some installs only ship gpg.exe.
 		return nil
 	}
 	args := []string{}
 	if home != "" {
-		args = append(args, "--homedir", home)
+		args = append(args, "--homedir", gpgToolHomePath(home, gpgconf))
 	}
 	args = append(args, "--launch", "gpg-agent")
-	if runErr := runDetachedTool(ctx, "", gpgEnv(home), gpgconf, args...); runErr != nil {
+	if runErr := runDetachedTool(ctx, "", gpgEnv(home, gpgconf), gpgconf, args...); runErr != nil {
 		return fmt.Errorf("GIT_KEYGEN_TOOL_FAILED: 无法启动 gpg-agent")
 	}
 	return nil
+}
+
+// siblingOrPath returns name.exe next to bin when present, else name for PATH lookup.
+func siblingOrPath(bin, name string) string {
+	if bin == "" {
+		return name
+	}
+	path, err := resolveToolPath(bin)
+	if err != nil {
+		return name
+	}
+	ext := ""
+	if runtime.GOOS == "windows" {
+		ext = ".exe"
+	}
+	sibling := filepath.Join(filepath.Dir(path), name+ext)
+	if info, err := os.Stat(sibling); err == nil && !info.IsDir() {
+		return sibling
+	}
+	return name
 }
 
 func defaultSSHDir() (string, error) {

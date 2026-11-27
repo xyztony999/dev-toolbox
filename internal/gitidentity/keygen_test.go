@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -239,7 +240,37 @@ func TestKeygenCreateOpenPGP(t *testing.T) {
 	requireTool(t, "gpg")
 	store, tools := keygenSandbox(t)
 	seedProfile(t, store)
+	runKeygenCreateOpenPGP(t, store, tools)
+}
 
+// CI Windows runners often only ship Git-for-Windows MSYS gpg; exercise that path.
+func TestKeygenCreateOpenPGPGitMSYS(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("MSYS gpg path only matters on Windows")
+	}
+	candidates := []string{
+		filepath.Join(os.Getenv("ProgramFiles"), "Git", "usr", "bin", "gpg.exe"),
+		`C:\Program Files\Git\usr\bin\gpg.exe`,
+		`E:\Program Files\Git\usr\bin\gpg.exe`,
+	}
+	var gitGPG string
+	for _, c := range candidates {
+		if st, err := os.Stat(c); err == nil && !st.IsDir() {
+			gitGPG = c
+			break
+		}
+	}
+	if gitGPG == "" {
+		t.Skip("Git for Windows gpg not installed")
+	}
+	store, tools := keygenSandbox(t)
+	tools.GPGBin = gitGPG
+	seedProfile(t, store)
+	runKeygenCreateOpenPGP(t, store, tools)
+}
+
+func runKeygenCreateOpenPGP(t *testing.T, store *Store, tools KeygenTools) {
+	t.Helper()
 	// Ensure we never touch the real user gnupg: GPGHome is the sandbox dir.
 	if tools.GPGHome == "" || tools.GPGHome == filepath.Join(os.Getenv("USERPROFILE"), ".gnupg") {
 		t.Fatal("test must use isolated GNUPGHOME")
@@ -373,6 +404,38 @@ func TestKeygenProfileWritePartial(t *testing.T) {
 	}
 	if !partial.Result.LocalKeyCreated || partial.Result.ProfileUpdated {
 		t.Fatalf("partial result wrong: %+v", partial.Result)
+	}
+}
+
+func TestWindowsPathToMSYS(t *testing.T) {
+	got := windowsPathToMSYS(`C:\Users\RUNNER~1\AppData\Local\Temp\dtg-1\g`)
+	want := "/c/Users/RUNNER~1/AppData/Local/Temp/dtg-1/g"
+	if got != want {
+		t.Fatalf("got %q want %q", got, want)
+	}
+	if !looksLikeMSYSBinary(`C:\Program Files\Git\usr\bin\gpg.exe`) {
+		t.Fatal("Git usr\\bin\\gpg should look like MSYS")
+	}
+	if looksLikeMSYSBinary(`C:\Program Files (x86)\GnuPG\bin\gpg.exe`) {
+		t.Fatal("Gpg4win should not look like MSYS")
+	}
+}
+
+func TestGPGToolHomePathMSYS(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("windows-only path rewriting")
+	}
+	gitGPG := `C:\Program Files\Git\usr\bin\gpg.exe`
+	home := `C:\Users\RUNNER~1\AppData\Local\Temp\dtg-1\g`
+	got := gpgToolHomePath(home, gitGPG)
+	want := "/c/Users/RUNNER~1/AppData/Local/Temp/dtg-1/g"
+	if got != want {
+		t.Fatalf("MSYS home got %q want %q", got, want)
+	}
+	native := `C:\Program Files (x86)\GnuPG\bin\gpg.exe`
+	gotNative := gpgToolHomePath(home, native)
+	if strings.HasPrefix(gotNative, "/c/") {
+		t.Fatalf("native gpg must keep drive path, got %q", gotNative)
 	}
 }
 

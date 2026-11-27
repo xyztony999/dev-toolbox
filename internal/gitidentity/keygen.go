@@ -487,12 +487,13 @@ func createOpenPGP(ctx context.Context, store *Store, tools KeygenTools, n norma
 		return "", err
 	}
 	uid := n.Profile.Name + " <" + n.Profile.Email + ">"
-	args := gpgArgs(home, "--batch", "--yes",
+	bin := tools.gpgBin()
+	args := gpgArgs(home, bin, "--batch", "--yes",
 		"--pinentry-mode", "loopback",
 		"--passphrase-fd", "0",
 		"--quick-generate-key", uid, gpgAlgoArg(n.Algorithm), "default", gpgExpireArg(n.Expiry))
 	stdin := n.Passphrase + "\n"
-	stdout, stderr, err := runTool(ctx, "", gpgEnv(home), stdin, tools.gpgBin(), args...)
+	stdout, stderr, err := runTool(ctx, "", gpgEnv(home, bin), stdin, bin, args...)
 	if err != nil || gpgGenerationFailed(stderr, stdout) {
 		detail := truncateToolErr(stderr)
 		if detail == "" {
@@ -658,8 +659,9 @@ func listOpenPGP(ctx context.Context, tools KeygenTools) ([]LocalKeySummary, err
 		return nil, fmt.Errorf("GIT_KEYGEN_TOOL_MISSING: 未找到 gpg")
 	}
 	home := tools.gpgHome()
-	out, stderr, err := runTool(ctx, "", gpgEnv(home), "", tools.gpgBin(),
-		gpgArgs(home, "--batch", "--list-secret-keys", "--with-colons", "--fixed-list-mode")...)
+	bin := tools.gpgBin()
+	out, stderr, err := runTool(ctx, "", gpgEnv(home, bin), "", bin,
+		gpgArgs(home, bin, "--batch", "--list-secret-keys", "--with-colons", "--fixed-list-mode")...)
 	if err != nil {
 		detail := truncateToolErr(stderr)
 		if detail == "" {
@@ -908,8 +910,9 @@ func exportPublicKeyText(ctx context.Context, tools KeygenTools, keyType, id str
 			return "", fmt.Errorf("GIT_KEYGEN_TOOL_MISSING: 未找到 gpg")
 		}
 		home := tools.gpgHome()
-		out, stderr, err := runTool(ctx, "", gpgEnv(home), "", tools.gpgBin(),
-			gpgArgs(home, "--batch", "--armor", "--export", id)...)
+		bin := tools.gpgBin()
+		out, stderr, err := runTool(ctx, "", gpgEnv(home, bin), "", bin,
+			gpgArgs(home, bin, "--batch", "--armor", "--export", id)...)
 		if err != nil || strings.TrimSpace(out) == "" {
 			detail := truncateToolErr(stderr)
 			if detail == "" {
@@ -937,13 +940,14 @@ func exportPublicKeyText(ctx context.Context, tools KeygenTools, keyType, id str
 
 func findNewestOpenPGPFingerprint(ctx context.Context, tools KeygenTools, uid string) (string, error) {
 	home := tools.gpgHome()
-	out, stderr, err := runTool(ctx, "", gpgEnv(home), "", tools.gpgBin(),
-		gpgArgs(home, "--batch", "--list-secret-keys", "--with-colons", "--fixed-list-mode", uid)...)
+	bin := tools.gpgBin()
+	out, stderr, err := runTool(ctx, "", gpgEnv(home, bin), "", bin,
+		gpgArgs(home, bin, "--batch", "--list-secret-keys", "--with-colons", "--fixed-list-mode", uid)...)
 	keys := parseGPGColonSecretKeys(out)
 	if len(keys) == 0 {
 		// Fallback: list all and pick last (UID match can fail on encoding).
-		allOut, allErrOut, allErr := runTool(ctx, "", gpgEnv(home), "", tools.gpgBin(),
-			gpgArgs(home, "--batch", "--list-secret-keys", "--with-colons", "--fixed-list-mode")...)
+		allOut, allErrOut, allErr := runTool(ctx, "", gpgEnv(home, bin), "", bin,
+			gpgArgs(home, bin, "--batch", "--list-secret-keys", "--with-colons", "--fixed-list-mode")...)
 		if allErr != nil && len(keys) == 0 {
 			detail := truncateToolErr(stderr)
 			if detail == "" {
@@ -963,11 +967,11 @@ func findNewestOpenPGPFingerprint(ctx context.Context, tools KeygenTools, uid st
 	return keys[len(keys)-1].Fingerprint, nil
 }
 
-func gpgArgs(home string, args ...string) []string {
+func gpgArgs(home, bin string, args ...string) []string {
 	if home == "" {
 		return args
 	}
-	return append([]string{"--homedir", home}, args...)
+	return append([]string{"--homedir", gpgToolHomePath(home, bin)}, args...)
 }
 
 // --- helpers ---

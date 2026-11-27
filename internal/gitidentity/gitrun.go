@@ -55,6 +55,8 @@ func findExecutable(name string) (string, error) {
 	if runtime.GOOS == "windows" {
 		extensions = []string{".exe"}
 	}
+	preferNativeGPG := runtime.GOOS == "windows" && (name == "gpg" || name == "gpgconf")
+	var first, msysFallback string
 	for _, dir := range filepath.SplitList(os.Getenv("PATH")) {
 		if dir == "" {
 			continue
@@ -65,9 +67,27 @@ func findExecutable(name string) (string, error) {
 				if runtime.GOOS != "windows" && info.Mode().Perm()&0o111 == 0 {
 					continue
 				}
+				if preferNativeGPG {
+					if looksLikeMSYSBinary(candidate) {
+						if msysFallback == "" {
+							msysFallback = candidate
+						}
+						continue
+					}
+					return candidate, nil
+				}
+				if first == "" {
+					first = candidate
+				}
 				return candidate, nil
 			}
 		}
+	}
+	if msysFallback != "" {
+		return msysFallback, nil
+	}
+	if first != "" {
+		return first, nil
 	}
 	return "", fmt.Errorf("git executable %q not found in PATH", name)
 }
